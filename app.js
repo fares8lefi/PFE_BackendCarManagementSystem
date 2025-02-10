@@ -10,9 +10,9 @@ var usersRouter = require('./routes/users');
 var app = express();
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
+const http =require('http');
+const {connectToDb}=require('./config/db');
+require('dotenv').config()
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -37,5 +37,9 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-
+const server=http.createServer(app);
+server.listen(process.env.port,()=>{
+  connectToDb();
+  console.log("serer running in port 5000");
+})
 module.exports = app;
