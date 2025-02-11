@@ -34,7 +34,7 @@ module.exports.addUserAdmin = async (req, res) => {
 };
 
 // find all users
-module.exports.findAllUsers = async (req, res) => {  
+module.exports.getAllUsers = async (req, res) => {  
   try {
     const userlist=await  userModel.find();
     res.status(200).json({ userlist });
@@ -44,7 +44,7 @@ module.exports.findAllUsers = async (req, res) => {
 };
 
 // find users by id 
-module.exports.findUsersbyId = async (req, res) => {  
+module.exports.getUsersbyId = async (req, res) => {  
   try {
     const {id}=req.params ;
     const user=await  userModel.findById(id);
@@ -58,9 +58,18 @@ module.exports.findUsersbyId = async (req, res) => {
 module.exports.deleteuserById = async (req, res) => {  
   try {
     const {id}=req.params ;
+    // check if user exist 
+    const checkUser = await userModel.findById(id);
+    if(!checkUser){
+      throw new Error("User Not Found");
+    }
+
     const user=await  userModel.findByIdAndDelete(id);
-    res.status(200).json({ user });
+     
+    res.status(200).json("user was delete successfully");
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+// 
