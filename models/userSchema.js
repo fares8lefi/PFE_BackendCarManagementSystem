@@ -5,7 +5,13 @@ const bcrypt = require("bcrypt");
 
 const userSchema = new mongoose.Schema({
   username: String,
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true ,
+    match: [
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "L'adresse e-mail doit être valide ex: exemple@domaine.com .",
+    ],
+
+  },
   password: {
     type: String,
     required: true,
