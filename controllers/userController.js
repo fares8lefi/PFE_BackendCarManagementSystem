@@ -42,3 +42,25 @@ module.exports.findAllUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// find users by id 
+module.exports.findUsersbyId = async (req, res) => {  
+  try {
+    const {id}=req.params ;
+    const user=await  userModel.findById(id);
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// delete by id 
+module.exports.deleteuserById = async (req, res) => {  
+  try {
+    const {id}=req.params ;
+    const user=await  userModel.findByIdAndDelete(id);
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
