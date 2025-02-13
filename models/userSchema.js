@@ -26,7 +26,9 @@ const userSchema = new mongoose.Schema({
     enum: ["admin", "client"],
   },
   user_image: { type: String, required: false, default: "client.png" },
+  count :{type : Number ,default :'0'},
 },
+
  {timestamps : true}
 );
 
