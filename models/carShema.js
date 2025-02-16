@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const carShema = new mongoose.Schema({
   marque: { type: String, required: true },
   model: { type: String, required: true },
-  year: { type: String, required: true },
+  year: { type: Number, required: true },
   price: { type: Number, require: true },
   description: { type: String },
   statut: {
@@ -19,7 +19,7 @@ const carShema = new mongoose.Schema({
 
 carShema.pre("save",async function (next) {
     try{
-        car.count = car.count + 1;
+        this.count = this.count + 1;
         next();
     }catch(error){
         next(error);

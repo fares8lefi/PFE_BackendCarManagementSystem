@@ -62,3 +62,88 @@ module.exports.deleteCarByID= async function(req ,res) {
     res.status(500).json({message : error.message});
   }
 }
+// search
+
+module.exports.getAllCarsByMarque =async (req,res)=>{
+try{
+  const {marque} = req.query ;
+  if(!marque){
+    throw new Error("Marque Not Found");
+  }
+  const carList = await carModel.find(
+    {marque: {$regex : marque ,$options :"i"} }
+  ) ;
+  res.status(200).json({carList});
+}
+catch(error){
+res.status(500).json({message : error.message});
+}
+}
+
+// search and filtring 
+
+module.exports.getAllCarsByPriceDes =async (req,res)=>{
+  try{
+    const {price} = req.query ;
+    
+    const marqueList = await carModel.find().sort({price: -1})
+
+    res.status(200).json({marqueList});
+  }
+  catch(error){
+  res.status(500).json({message : error.message});
+  }
+  } 
+
+  //search and filtring  by price 
+  module.exports.getAllCarsByMarqueFiltringByPrice =async (req,res)=>{
+    try{
+      const {marque} = req.query ;
+      if(!marque){
+        throw new Error("Marque Not Found");
+      }
+      const carList = await carModel.find(
+        {marque: {$regex : marque ,$options :"i"} }
+      ).sort({price: -1}) ;
+      res.status(200).json({carList});
+    }
+    catch(error){
+    res.status(500).json({message : error.message});
+    }
+    }
+    //search and filtring  by  
+
+    module.exports.getAllCarsByMarqueFiltringByYear =async (req,res)=>{
+      try{
+        const {marque} = req.query ;
+        if(!marque){
+          throw new Error("Marque Not Found");
+        }
+        const carList = await carModel.find(
+          {marque: {$regex : marque ,$options :"i"} }
+        ).sort({year: -1}) ;
+        res.status(200).json({carList});
+      }
+      catch(error){
+      res.status(500).json({message : error.message});
+      }
+      } 
+      // search and filtring between 
+         
+      module.exports.getAllCarsByMarqueFiltringBetween =async (req,res)=>{
+        try{
+          const {marque} = req.query ;
+          if(!marque){
+            throw new Error("Marque Not Found");
+          }
+          const carList = await carModel.find({
+            marque: { $regex: marque, $options: "i" }, // Filtre par marque (insensible à la casse)
+            price: { $gte: 40, $lte: 250 } // Filtre par prix (entre 40 et 250)
+        }).sort({ price: 1 });   
+          // // il faut ajouté les entrée des valeurs dans une formulaire 
+          res.status(200).json({carList});
+        }
+        catch(error){
+        res.status(500).json({message : error.message});
+        }
+        } 
