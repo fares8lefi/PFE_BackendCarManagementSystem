@@ -5,11 +5,14 @@ const carShema = new mongoose.Schema({
   model: { type: String, required: true },
   year: { type: Number, required: true },
   price: { type: Number, require: true },
+  /* km :{type:Number , required :  true},*/
   description: { type: String },
   statut: {
     type: String,
     enum: ["Vendu", "Disponible"],
   },
+  cars_images :[{ type: Buffer }],
+
   count :{type : Number ,default :'0'},
   // qrCodeId:{}, relation avec une autre tableau on va l'ajout
   // vendurId:{} , relation avec une autre tableau on va l'ajout

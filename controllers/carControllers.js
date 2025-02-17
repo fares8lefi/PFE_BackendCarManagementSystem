@@ -1,6 +1,6 @@
 const car = require("../models/carShema");
 const carModel =require("../models/carShema");
-
+const fs = require('fs');
 
 // l'ajout d'une car 
 module.exports.addCar = async (req, res) => {
@@ -20,6 +20,37 @@ module.exports.addCar = async (req, res) => {
       res.status(500).json({ message: error.message });
     }
   };
+
+  // add  cars with list of images 
+  module.exports.addCarImages = async (req, res) => {
+    try {
+      console.log(req.files); // Vérifiez les fichiers reçus
+      const { marque, model, year, price, description } = req.body;
+      const statut = "Disponible";
+  
+      // Lire les fichiers et les convertir en Buffer
+      const imageBuffers = req.files.map(file => fs.readFileSync(file.path));
+  
+      // Créer une nouvelle voiture avec la liste des images en Buffer
+      const car = await carModel.create({
+        marque,
+        model,
+        year,
+        price,
+        description,
+        statut,
+        cars_images: imageBuffers, // Stocker les images sous forme de Buffer
+      });
+  
+      // Supprimer les fichiers temporaires après les avoir stockés dans MongoDB
+      req.files.forEach(file => fs.unlinkSync(file.path));
+  
+      res.status(200).json({ car });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
+ 
   // get all cars 
   module.exports.getAllCars= async function(req ,res) {
     try{

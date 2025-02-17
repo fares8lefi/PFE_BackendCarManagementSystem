@@ -1,4 +1,5 @@
 const userModel = require("../models/userSchema");
+const fs = require('fs');
 
 module.exports.addUserClient = async (req, res) => {
   try {
@@ -17,7 +18,7 @@ module.exports.addUserClient = async (req, res) => {
 };
 // add user client with image :
 
-module.exports.addUserClientImg = async (req, res) => {
+ module.exports.addUserClientImg = async (req, res) => {
   try {
     const { username, email, password } = req.body; // source de l'entré du data
     const role = "client";
@@ -33,7 +34,45 @@ module.exports.addUserClientImg = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+}; 
+// add image tp base donné 
+
+module.exports.addUserClientImgOf = async (req, res) => {
+  try {
+    const { username, email, password } = req.body; // Données du formulaire
+    const role = "client";
+
+    // Lire le fichier image et le convertir en Buffer
+    const imageBuffer = fs.readFileSync(req.file.path);
+
+    // Créer un nouvel utilisateur avec l'image
+    const user = await userModel.create({
+      username,
+      email,
+      password,
+      role,
+      user_image: imageBuffer, // Stocker l'image sous forme de Buffer
+    });
+
+    // Supprimer le fichier temporaire après l'avoir stocké dans la base de données
+    fs.unlinkSync(req.file.path);
+
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
+
+
+
+
+
+
+
+
+
+
+
 
 // add admin
 module.exports.addUserAdmin = async (req, res) => {

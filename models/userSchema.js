@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["admin", "client"],
   },
-  user_image: { type: String, required: false, default: "client.png" },
+  user_image: { type: Buffer , required: false, default: "client.png" },
   count :{type : Number ,default :'0'},
 },
 
