@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
   },
   user_image: { type: Buffer , required: false, default: "client.png" },
   count :{type : Number ,default :'0'},
+  carId: [{type : mongoose.Schema.Types.ObjectId,ref:'Car'}],  //one to many 
 },
 
  {timestamps : true}
@@ -51,5 +52,5 @@ userSchema.post("save",async function (res ,req ,next) {
     console.log("user add -------------------------------");
 })
 
-const user = mongoose.model("user",userSchema)
-module.exports =user;
+const User = mongoose.model("User",userSchema)
+module.exports =User;

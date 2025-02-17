@@ -15,7 +15,7 @@ const carShema = new mongoose.Schema({
 
   count :{type : Number ,default :'0'},
   // qrCodeId:{}, relation avec une autre tableau on va l'ajout
-  // vendurId:{} , relation avec une autre tableau on va l'ajout
+ vendurId: {type : mongoose.Schema.Types.ObjectId,ref:'User'},//one to many } ,       //relation avec une autre tableau user 
 },
 {timestamps : true}
 );
@@ -34,5 +34,5 @@ carShema.post("save",async function (res ,req ,next) {
     console.log("car add -------------------------------");
 })
 
-const car = mongoose.model("carModel", carShema);
-module.exports = car;
+const Car = mongoose.model("carModel", carShema);
+module.exports = Car;
