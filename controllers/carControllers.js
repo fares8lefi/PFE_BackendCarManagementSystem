@@ -1,5 +1,6 @@
 const car = require("../models/carShema");
 const carModel =require("../models/carShema");
+const userModel = require("../models/userSchema");
 const fs = require('fs');
 
 // l'ajout d'une car 
@@ -25,12 +26,15 @@ module.exports.addCar = async (req, res) => {
   module.exports.addCarImages = async (req, res) => {
     try {
       console.log(req.files); // Vérifiez les fichiers reçus
-      const { marque, model, year, price, description } = req.body;
+      const { marque, model, year, price, description ,userId } = req.body;
       const statut = "Disponible";
-  
+      
+
       // Lire les fichiers et les convertir en Buffer
       const imageBuffers = req.files.map(file => fs.readFileSync(file.path));
-  
+      if (!userId) {
+        throw new Error("L'ID de l'utilisateur est manquant.");
+      }
       // Créer une nouvelle voiture avec la liste des images en Buffer
       const car = await carModel.create({
         marque,
@@ -39,9 +43,17 @@ module.exports.addCar = async (req, res) => {
         price,
         description,
         statut,
-        cars_images: imageBuffers, // Stocker les images sous forme de Buffer
+        cars_images: imageBuffers, 
+        vendurId : userId ,
+
+        // Stocker les images sous forme de Buffer
       });
-  
+      if (!car || !car._id) {
+        throw new Error("La voiture n'a pas été créée correctement.");
+      }
+      await userModel.findByIdAndUpdate(userId, {
+        $set: {carId :car._id},
+      });
       // Supprimer les fichiers temporaires après les avoir stockés dans MongoDB
       req.files.forEach(file => fs.unlinkSync(file.path));
   
