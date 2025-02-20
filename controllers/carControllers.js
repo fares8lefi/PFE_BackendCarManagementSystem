@@ -1,41 +1,24 @@
 const car = require("../models/carShema");
 const carModel =require("../models/carShema");
 const userModel = require("../models/userSchema");
+const mongoose = require('mongoose');
 const fs = require('fs');
 
-// l'ajout d'une car 
-module.exports.addCar = async (req, res) => {
-    try {
-      const {marque,model,year,price,description } = req.body; // source de l'entré du data
-      const statut = "Disponible";
-      const car = await carModel.create({
-        marque : marque ,
-        model :model, 
-        year : year,
-        price :price ,
-        description : description,
-        statut : statut
-      });
-      res.status(200).json({ car });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  };
+
+
 
   // add  cars with list of images 
   module.exports.addCarImages = async (req, res) => {
     try {
-      console.log(req.files); // Vérifiez les fichiers reçus
+    
       const { marque, model, year, price, description ,userId } = req.body;
       const statut = "Disponible";
-      
-
-      // Lire les fichiers et les convertir en Buffer
+     
       const imageBuffers = req.files.map(file => fs.readFileSync(file.path));
       if (!userId) {
         throw new Error("L'ID de l'utilisateur est manquant.");
       }
-      // Créer une nouvelle voiture avec la liste des images en Buffer
+
       const car = await carModel.create({
         marque,
         model,
@@ -43,8 +26,8 @@ module.exports.addCar = async (req, res) => {
         price,
         description,
         statut,
-        cars_images: imageBuffers, 
-        vendurId : userId ,
+        cars_images: imageBuffers, // liste des images 
+        vendeurId : userId ,
 
         // Stocker les images sous forme de Buffer
       });
@@ -52,8 +35,9 @@ module.exports.addCar = async (req, res) => {
         throw new Error("La voiture n'a pas été créée correctement.");
       }
       await userModel.findByIdAndUpdate(userId, {
-        $set: {carId :car._id},
-      });
+        $addToSet: {carId :car._id},
+      },{ upsert: true }
+    );
       // Supprimer les fichiers temporaires après les avoir stockés dans MongoDB
       req.files.forEach(file => fs.unlinkSync(file.path));
   
@@ -90,21 +74,43 @@ module.exports.UpdateCarById= async function(req ,res) {
   }
   
 }
-// delete by is
+// delete by id 
 
-module.exports.deleteCarByID= async function(req ,res) {
-  try{
-    
-    const {id}=req.params ;
-     await carModel.findByIdAndDelete(id);
-    const deleteCar = await carModel.findById(id);
-    console.log("car delete ") ;
-    res.status(200).json({ deleteCar });
+module.exports.deleteCarByID = async function (req, res) {
+  try {
+      const carId = req.params.carId;
+      const car = await carModel.findById(carId);
+      
+      if (!car) {
+          return res.status(404).json({ message: "Voiture non trouvée" });
+      }
+      //user id pour la mise a jour
+      const userId = car.vendeurId; 
+      console.log("userId " ,userId);
+      if (!userId) {
+          return res.status(400).json({ message: "Vendeur non associé à cette voiture" });
+      }
+
+      //Suppression du car
+      await carModel.findByIdAndDelete(carId);
+
+      //update user 
+      await userModel.findByIdAndUpdate(userId, {
+          $pull: { carId: carId } //supprission du tableau des ids 
+      });
+
+      res.status(200).json({ message: "Voiture supprimée avec succès" });
+
+  } catch (error) {
+      console.error("Erreur :", error);
+      res.status(500).json({ message: "Erreur serveur" });
   }
-  catch(error){
-    res.status(500).json({message : error.message});
-  }
-}
+};
+ 
+
+// suppression  sans relation  
+
+
 // search
 
 module.exports.getAllCarsByMarque =async (req,res)=>{
@@ -123,7 +129,7 @@ res.status(500).json({message : error.message});
 }
 }
 
-// search and filtring 
+// search and filltring 
 
 module.exports.getAllCarsByPriceDes =async (req,res)=>{
   try{
