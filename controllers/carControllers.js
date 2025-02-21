@@ -2,7 +2,10 @@ const car = require("../models/carShema");
 const carModel =require("../models/carShema");
 const userModel = require("../models/userSchema");
 const mongoose = require('mongoose');
+const Qrcode =require('../models/qrCodeSchema');
 const fs = require('fs');
+const QRCode = require('qrcode');
+const path = require('path');
 
 
 
@@ -31,6 +34,41 @@ const fs = require('fs');
 
         // Stocker les images sous forme de Buffer
       });
+
+      const carData = {
+        marque: car.marque,
+        model: car.model,
+        year: car.year,
+        price: car.price,
+        description: car.description,
+        statut: car.statut
+    };
+
+    // Convertir les données en JSON
+    const carDataJSON = JSON.stringify(carData);
+
+    // Générer le QR code avec les données de la voiture
+     //const qrCodePath = path.join(__dirname, '../qrcodes', `vehicle_${car._id}.png`);
+    // await QRCode.toFile(qrCodePath, carDataJSON);
+
+    const qrCodeBuffer = await QRCode.toBuffer(carDataJSON)
+    // Enregistrer le QR code dans la base de données
+    const qrCodeData = await Qrcode.create({
+       qrCode: carDataJSON, // Stocker les données JSON dans le champ qrCode
+        carId: car._id, // Référence à la voiture
+    });
+
+      /*
+      const url = `http://localhost:3000/vehicle/${car._id}`;
+      const qrCodePath = `qrcodes/vehicle_${car._id}.png`;
+      await QRCode.toFile(qrCodePath, url); 
+
+      const qrCode = await qrcode.create({
+        qrCode: url,
+        carId: car._id, 
+    });
+    */
+
       if (!car || !car._id) {
         throw new Error("La voiture n'a pas été créée correctement.");
       }
@@ -47,6 +85,8 @@ const fs = require('fs');
     }
   };
  
+
+
   // get all cars 
   module.exports.getAllCars= async function(req ,res) {
     try{
