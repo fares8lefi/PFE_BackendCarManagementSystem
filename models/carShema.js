@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+
 const carShema = new mongoose.Schema({
   marque: { type: String, required: true },
   model: { type: String, required: true },
@@ -15,7 +16,8 @@ const carShema = new mongoose.Schema({
 
   count :{type : Number ,default :'0'},
   // qrCodeId:{}, relation avec une autre tableau on va l'ajout
- vendeurId: {type : mongoose.Schema.Types.ObjectId,ref:'User',required :true },//one to many } ,       //relation avec une autre tableau user 
+ userID: {type : mongoose.Schema.Types.ObjectId,ref:'User',required :true },
+ commentId: {type : mongoose.Schema.Types.ObjectId,ref:'comment',required :true },//one to many } ,       //relation avec une autre tableau user 
 },
 {timestamps : true}
 );

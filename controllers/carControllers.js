@@ -30,11 +30,11 @@ const path = require('path');
         description,
         statut,
         cars_images: imageBuffers, // liste des images 
-        vendeurId : userId ,
+        userID : userId ,
 
         // Stocker les images sous forme de Buffer
       });
-
+  /*
       const carData = {
         marque: car.marque,
         model: car.model,
@@ -125,7 +125,7 @@ module.exports.deleteCarByID = async function (req, res) {
           return res.status(404).json({ message: "Voiture non trouvée" });
       }
       //user id pour la mise a jour
-      const userId = car.vendeurId; 
+      const userId = car.userID; 
       console.log("userId " ,userId);
       if (!userId) {
           return res.status(400).json({ message: "Vendeur non associé à cette voiture" });
