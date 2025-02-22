@@ -1,3 +1,4 @@
+const { models } = require("mongoose");
 const userModel = require("../models/userSchema");
 const fs = require("fs");
 
@@ -152,6 +153,19 @@ module.exports.serachByUsername = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+//login
+models.exports.login = async function (req,res) => {
+  try{
+    const {email ,password} =req.body ; 
+    const user = await userModel.login(email,password);
+    res.status(200).json({user});
+  }
+catch(error){
+  res.status(500).json({message : error.message });
+}
+}
+
 // serach and tri
 
 /*
