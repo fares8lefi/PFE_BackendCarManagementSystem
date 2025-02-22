@@ -51,22 +51,21 @@ userSchema.pre("save", async function (next) {
 userSchema.post("save", async function (res, req, next) {
   console.log("user add -------------------------------");
 });
+
+//login model
 userSchema.statics.login = async function (email, password) {
-  try {
-    const user_image = await this.findOne(email);
-    if (!email) {
-      const auth =  await bcrypt.compare(password, User.password);
-      if(! auth){
-        return User ;
-      }else{
-        throw Error("password invalid ");
-      }
+  const user = await this.findOne({ email });
+
+  if (user) {
+    const auth = await bcrypt.compare(password, user.password);
+
+    if (auth) {
+      return user;
     } else {
-      throw Error("email not found");
+      throw new Error("password invalid");
     }
-    next();
-  } catch (error) {
-    next(error);
+  } else {
+    throw new Error("email not found");
   }
 };
 const User = mongoose.model("User", userSchema);
