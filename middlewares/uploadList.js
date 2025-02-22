@@ -1,9 +1,9 @@
 const multer = require("multer");
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
 // Créer le dossier 'public/files' s'il n'existe pas
-const uploadPath = 'public/files';
+const uploadPath = "public/files";
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
 }
@@ -26,7 +26,7 @@ var storage = multer.diskStorage({
     }
 
     cb(null, fileName); // Renommer le fichier si nécessaire
-  }
+  },
 });
 
 // Exporter l'instance de multer

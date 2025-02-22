@@ -6,18 +6,18 @@ module.exports.addComment = async (req, res) => {
   try {
     const { content, userId, carId } = req.body;
 
-    const checkUser = await userModel.findById(userId);
-    if (!checkUser) {
+    const User = await userModel.findById(userId);
+    if (!User) {
       console.log("user not found ");
     }
-    const checkCar = await carModel.findById(carId);
-    if (!checkCar) {
+    const Car = await carModel.findById(carId);
+    if (!Car) {
       console.log("car not found");
     }
     const comment = await commentModel.create({
       content: content,
-      userId: checkUser,
-      carId: checkCar,
+      userId: User,
+      carId: Car,
     });
     res.status(200).json({ comment });
   } catch (error) {

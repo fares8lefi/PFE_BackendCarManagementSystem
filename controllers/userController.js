@@ -1,5 +1,5 @@
 const userModel = require("../models/userSchema");
-const fs = require('fs');
+const fs = require("fs");
 
 module.exports.addUserClient = async (req, res) => {
   try {
@@ -18,7 +18,7 @@ module.exports.addUserClient = async (req, res) => {
 };
 // add user client with image :
 
- module.exports.addUserClientImg = async (req, res) => {
+module.exports.addUserClientImg = async (req, res) => {
   try {
     const { username, email, password } = req.body; // source de l'entré du data
     const role = "client";
@@ -34,8 +34,8 @@ module.exports.addUserClient = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}; 
-// add image tp base donné 
+};
+// add image tp base donné
 
 module.exports.addUserClientImgOf = async (req, res) => {
   try {
@@ -62,17 +62,6 @@ module.exports.addUserClientImgOf = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
-
-
-
-
-
-
-
-
-
 
 // add admin
 module.exports.addUserAdmin = async (req, res) => {
@@ -137,7 +126,7 @@ module.exports.UpdateUserClientbyId = async (req, res) => {
     const role = "client";
     const { id } = req.params;
     await userModel.findByIdAndUpdate(id, {
-      $set: {username, email},
+      $set: { username, email },
     });
     const update = await userModel.findById(id);
     res.status(200).json({ update });
@@ -146,27 +135,26 @@ module.exports.UpdateUserClientbyId = async (req, res) => {
   }
 };
 
-// search 
-
+// search
 
 module.exports.serachByUsername = async (req, res) => {
   try {
-    const {username} = req.query ;
-    if(!username){
+    const { username } = req.query;
+    if (!username) {
       throw new Error("Username Not Found");
     }
-    const userList = await userModel.find(
-      {username: {$regex : username ,$options :"i"} }
-    ) ;
+    const userList = await userModel.find({
+      username: { $regex: username, $options: "i" },
+    });
 
-    res.status(200).json({userList});
+    res.status(200).json({ userList });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
- // serach and tri 
+// serach and tri
 
- /*
+/*
  module.exports.serachByUsername = async (req, res) => {
   try {
     const {username} = req.query ;
@@ -180,8 +168,7 @@ module.exports.serachByUsername = async (req, res) => {
 };
 */
 
-
- /*
+/*
  module.exports.serachButWeen = async (req, res) => {
   try {
     const max = req.query.max ;
