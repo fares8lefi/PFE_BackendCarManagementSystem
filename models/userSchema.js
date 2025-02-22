@@ -64,7 +64,10 @@ userSchema.statics.login = async function (email, password) {
     } else {
       throw Error("email not found");
     }
-  } catch (error) {}
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 const User = mongoose.model("User", userSchema);
 module.exports = User;
