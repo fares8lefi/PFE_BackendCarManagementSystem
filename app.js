@@ -3,7 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
+const session = require('express-session');
 
 var usersRouter = require('./routes/usersRouter');
 var carsRouter = require('./routes/carsRouter');
@@ -22,7 +22,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(session({   //cobfig session
+  secret: "jwt_login_user",
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    secure: {secure: false},
+    maxAge: 24*60*60,
+  
+  },  
+}))
 //
 app.use('/users', usersRouter);
 app.use('/cars',carsRouter);
