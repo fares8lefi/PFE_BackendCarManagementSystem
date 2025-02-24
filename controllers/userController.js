@@ -1,13 +1,15 @@
 const { models } = require("mongoose");
 const userModel = require("../models/userSchema");
 const fs = require("fs");
-const jwt = require("JsonWebToken");
+const jwt = require("jsonwebtoken");  
 
 
 const maxTime = 24 *60 * 60 //24H
+
 const createToken = (id) => {
-  const token = jwt.sign({ id }, 'jwt_login_user', { expiresIn: maxTime });
+  return jwt.sign({ id }, 'jwt_login_user', { expiresIn: maxTime });
 };
+
 
 module.exports.addUserClient = async (req, res) => {
   try {
@@ -167,10 +169,15 @@ module.exports.loginUser = async function (req, res) {
     const { email, password } = req.body;
     const user = await userModel.login(email, password);
     const token = createToken(user._id);
-    console.log(token);
-    res.cookie("jwt_login_user", token, {httpOnly:false,maxAge:maxTime * 1000});
-    console.log("token and cookie create successflly");
-    res.status(200).json({user})
+    console.log("Token généré :", token);
+
+    res.cookie("jwt_login", token, { // Nom du cookie : "jwt_login"
+      httpOnly: true,
+      maxAge: maxTime * 1000,
+    });
+    console.log("Cookie défini avec succès");
+
+    res.status(200).json({ user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
