@@ -1,6 +1,13 @@
 const { models } = require("mongoose");
 const userModel = require("../models/userSchema");
 const fs = require("fs");
+const jwt = require("JsonWebToken");
+
+
+const maxTime = 24 *60 * 60 //24H
+const createToken = (id) => {
+  const token = jwt.sign({ id }, 'jwt_login_user', { expiresIn: maxTime });
+};
 
 module.exports.addUserClient = async (req, res) => {
   try {
@@ -155,16 +162,19 @@ module.exports.serachByUsername = async (req, res) => {
 };
 
 //login
-models.exports.login = async function (req,res) => {
-  try{
-    const {email ,password} =req.body ; 
-    const user = await userModel.login(email,password);
-    res.status(200).json({user});
+module.exports.loginUser = async function (req, res) {
+  try {
+    const { email, password } = req.body;
+    const user = await userModel.login(email, password);
+    const token = createToken(user._id);
+    console.log(token);
+    res.cookie("jwt_login_user", token, {httpOnly:false,maxAge:maxTime * 1000});
+    console.log("token and cookie create successflly");
+    res.status(200).json({user})
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-catch(error){
-  res.status(500).json({message : error.message });
-}
-}
+};
 
 // serach and tri
 
