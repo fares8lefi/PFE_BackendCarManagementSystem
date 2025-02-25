@@ -182,6 +182,16 @@ module.exports.loginUser = async function (req, res) {
     res.status(500).json({ message: error.message });
   }
 };
+//log out function 
+module.exports.logout= async (req,res) => {
+  try {
+
+      res.cookie("jwt_login", "", {httpOnly:false,maxAge:1})
+      res.status(200).json("logged")
+  } catch (error) {
+      res.status(500).json({message: error.message});
+  }
+}
 
 // serach and tri
 
