@@ -11,15 +11,15 @@ const requireAuthUser = (req, res, next) => {
     jwt.verify(token, process.env.net_Secret, async (err, decodedToken) => {
       if (err) {
         console.log("il ya une erreur au niveau du token", err.message);
-        //req.session.user = null;  //session null
+        req.session.user = null;  //session null
         res.json("/Problem_token");
       } else {
-        //req.session.user = await userModel.findById(decodedToken.id); //session feha user
+        req.session.user = await userModel.findById(decodedToken.id); //session get user
         next();
       }
     });
   } else {
-   //req.session.user = null; //session null
+   req.session.user = null; //session null
     res.json("/pas_de_token");
   }
 };
