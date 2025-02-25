@@ -8,7 +8,7 @@ const requireAuthUser = (req, res, next) => {
   //const token = authHeader && authHeader.split(" ")[1];
   console.log("token récu avec succée: ", token);
   if (token) {
-    jwt.verify(token, 'jwt_login_user', async (err, decodedToken) => {
+    jwt.verify(token, process.env.net_Secret, async (err, decodedToken) => {
       if (err) {
         console.log("il ya une erreur au niveau du token", err.message);
         //req.session.user = null;  //session null

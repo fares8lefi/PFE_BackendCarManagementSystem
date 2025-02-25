@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const maxTime = 24 *60 * 60 //24H
 
 const createToken = (id) => {
-  return jwt.sign({ id }, 'jwt_login_user', { expiresIn: maxTime });
+  return jwt.sign({ id }, process.env.net_Secret, { expiresIn: maxTime });
 };
 
 

@@ -22,8 +22,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({   //cobfig session
-  secret: "jwt_login_user",
+app.use(session({   //config session
+  secret: process.env.net_Secret,
   resave: false,
   saveUninitialized: true,
   cookie: {
