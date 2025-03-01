@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema(
     count: { type: Number, default: "0" },
     carId: [{ type: mongoose.Schema.Types.ObjectId, ref: "Car" }], //one to many
     commentId: [{ type: mongoose.Schema.Types.ObjectId, ref: "Car" }],
+    notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Notification' }],
   },
 
   { timestamps: true }
