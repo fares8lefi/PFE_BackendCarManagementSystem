@@ -3,10 +3,7 @@ const Car = require("../models/carShema");
 
 module.exports.addCarToFavorites = async (req, res) => {
   try {
-    const userId = req.user._id; 
-    if (!req.user) {
-        console.log('user not ');
-      }
+    const userId = req.session.user._id;
     const { carId } = req.body
     if (!carId) {
         return res.status(400).json({ message: "ID de la voiture requis." });
