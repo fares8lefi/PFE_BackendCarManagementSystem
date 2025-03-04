@@ -26,7 +26,7 @@ module.exports.addCarToFavorites = async (req, res) => {
 
 module.exports.getUserFavorites = async (req, res) => {
   try {
-    // Vérifier que l'utilisateur est connecté via le middleware
+    
     if (!req.session.user) {
       console.log("user non authentifié");
     }
@@ -45,6 +45,26 @@ module.exports.getUserFavorites = async (req, res) => {
     }
 
     res.status(200).json({ favoris });
+  } catch (error) {
+    res.status(500).json({ message: error.message,});
+  }
+};
+
+// delete favoris 
+module.exports.deleteFavoris = async (req, res) => {
+  try {
+    
+    const userId = req.session.user._id;
+    if(!userId){
+      res.status(200).json({message :"user non authentifié"});
+    }
+    const { carId } = req.body;
+    const updatedFavoris = await Favoris.findOneAndUpdate(
+      { userId }, 
+      { $pull: { cars: carId } }, // Correction du nom du champ
+      { new: true } // Retourne le document modifié
+    );
+    res.status(200).json({ updatedFavoris });
   } catch (error) {
     res.status(500).json({ message: error.message,});
   }

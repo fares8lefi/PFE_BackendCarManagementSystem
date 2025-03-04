@@ -6,5 +6,6 @@ const favorisController = require('../controllers/favorisController');
 
 router.post('/addCarToFavorites',requireAuthUser,favorisController.addCarToFavorites); 
 router.get('/getUserFavorites',requireAuthUser,favorisController.getUserFavorites); 
+router.delete('/deleteFavoris',requireAuthUser,favorisController.deleteFavoris); 
 
 module.exports = router;
