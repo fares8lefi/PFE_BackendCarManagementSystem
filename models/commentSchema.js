@@ -5,15 +5,13 @@ const commentShema = new mongoose.Schema(
     content: { type: String },
     carId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Car",
-      required: true,
-      unique: true,
+      ref: 'Car',
+      required: true
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-      required: true,
-      unique: true,
+      ref: 'User',
+      required: true
     },
   },
   { timestamps: true }
