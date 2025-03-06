@@ -29,8 +29,13 @@ const userSchema = new mongoose.Schema(
     user_image: { type: Buffer, required: false, default: "client.png" },
     count: { type: Number, default: "0" },
     carId: [{ type: mongoose.Schema.Types.ObjectId, ref: "Car" }], //one to many
-    commentId: [{ type: mongoose.Schema.Types.ObjectId, ref: "Car" }],
-    notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Notification' }],
+    commentId: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Comment'
+    }],
+    notifications: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Notification" },
+    ],
   },
 
   { timestamps: true }
