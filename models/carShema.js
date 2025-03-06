@@ -21,11 +21,12 @@ const carShema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    commentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "comment",
-      required: true,
-    }, //one to many } ,       //relation avec une autre tableau user
+    commentId: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+      },
+    ], //one to many } ,       //relation avec une autre tableau user
   },
   { timestamps: true }
 );
