@@ -4,7 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const session = require('express-session');
-
+const cors = require("cors");
 var usersRouter = require('./routes/usersRouter');
 var carsRouter = require('./routes/carsRouter');
 var commentRouter = require('./routes/commentRouter');
@@ -23,6 +23,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(cors({
+  origin:"http://localhost:5173",
+  methods:"GET,POST,PUT,Delete",
+}))
+
 app.use(session({   //config session
   secret: process.env.net_Secret,
   resave: false,
@@ -33,6 +39,7 @@ app.use(session({   //config session
   
   },  
 }))
+
 //
 app.use('/users', usersRouter);
 app.use('/cars',carsRouter);
