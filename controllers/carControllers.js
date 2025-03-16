@@ -21,7 +21,6 @@ const path = require('path');
       if (!userId) {
         throw new Error("L'ID de l'utilisateur est manquant.");
       }
-
       const car = await carModel.create({
         marque,
         model,
@@ -105,8 +104,31 @@ const path = require('path');
     }
 };
 
-    
-  
+
+
+module.exports.getCarById = async function(req, res) {
+  try {
+      const { id } = req.params;
+      const car = await carModel.findById(id);
+
+      if (!car) {
+          return res.status(404).json({ message: "Voiture non trouvée" });
+      }
+
+      // Convertir les images Buffer en Base64
+      const carWithImages = {
+          ...car._doc,
+          cars_images: car.cars_images.length > 0 
+              ? car.cars_images.map(img => `data:image/jpeg;base64,${img.toString('base64')}`)
+              : []
+      };
+
+      res.status(200).json(carWithImages);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+};
+
 // modification d'une car 
 module.exports.UpdateCarById= async function(req ,res) {
   try{
