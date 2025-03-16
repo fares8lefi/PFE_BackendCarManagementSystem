@@ -39,6 +39,7 @@ const path = require('path');
         marque: car.marque,
         model: car.model,
         year: car.year,
+
         price: car.price,
         description: car.description,
         statut: car.statut
@@ -85,19 +86,27 @@ const path = require('path');
     }
   };
  
-
-
   // get all cars 
-  module.exports.getAllCars= async function(req ,res) {
-    try{
-      const cars = await carModel.find();
-      res.status(200).json({cars});
+  module.exports.getAllCars = async function(req, res) {
+    try {
+        const cars = await carModel.find();
+
+        // Convertir les images Buffer en Base64
+        const carsWithImages = cars.map(car => ({
+            ...car._doc,
+            cars_images: car.cars_images.length > 0 
+                ? `data:image/jpeg;base64,${car.cars_images[0].toString('base64')}` 
+                : null // Afficher seulement la première image
+        }));
+
+        res.status(200).json({ cars: carsWithImages });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    catch(error){
-      res.status(500).json({message : error.message});
-    }
+};
+
     
-  }
+  
 // modification d'une car 
 module.exports.UpdateCarById= async function(req ,res) {
   try{
