@@ -69,6 +69,6 @@ const server=http.createServer(app); // création dun server
 // connexion au server
 server.listen(process.env.port,()=>{
   connectToDb();
-  console.log("server running in port 5000");
+  console.log("server running in port 3000");
 })
 module.exports = app;
