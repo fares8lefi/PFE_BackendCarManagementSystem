@@ -14,8 +14,8 @@ const path = require('path');
   module.exports.addCarImages = async (req, res) => {
     try {
     
-      const { marque, model, year, price, description ,userId } = req.body;
-      const statut = "Disponible";
+      const { marque, model, year, price, description ,userId,Position,  Puissance, Boite, km, Energie  } = req.body;
+      //const statut = "Disponible";
      
       const imageBuffers = req.files.map(file => fs.readFileSync(file.path));
       if (!userId) {
@@ -27,7 +27,12 @@ const path = require('path');
         year,
         price,
         description,
-        statut,
+        //statut,
+        Position,
+        Puissance , 
+        Boite,
+        km,
+        Energie,
         cars_images: imageBuffers, // liste des images 
         userID : userId ,
 
@@ -112,7 +117,7 @@ module.exports.getCarById = async function(req, res) {
       const car = await carModel.findById(id);
 
       if (!car) {
-          return res.status(404).json({ message: "Voiture non trouvée" });
+          consolelog(" car non trouvée")
       }
 
       // Convertir les images Buffer en Base64
