@@ -49,30 +49,68 @@ module.exports.addUserClientImg = async (req, res) => {
 
 module.exports.addUserClientImgOf = async (req, res) => {
   try {
-    const { username, email, password } = req.body; // Données du formulaire
-    const role = "client";
+    // Vérification du fichier
+    if (!req.file) {
+      return res.status(400).json({ message: "Aucune image uploadée" });
+    }
 
-    // Lire le fichier image et le convertir en Buffer
+    // Vérification des données utilisateur
+    if (!req.body.user) {
+      return res.status(400).json({ message: "Données utilisateur manquantes" });
+    }
+
+    // Parsing sécurisé
+    let userData;
+    try {
+      userData = JSON.parse(req.body.user);
+    } catch (error) {
+      return res.status(400).json({ message: "Format JSON invalide" });
+    }
+
+    // Validation des champs
+    const requiredFields = ['username', 'email', 'password'];
+    const missingFields = requiredFields.filter(field => !userData[field]);
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: `Champs manquants : ${missingFields.join(', ')}`
+      });
+    }
+
+    // Conversion de l'image
     const imageBuffer = fs.readFileSync(req.file.path);
-
-    // Créer un nouvel utilisateur avec l'image
+    
+    // Création de l'utilisateur
     const user = await userModel.create({
-      username,
-      email,
-      password,
-      role,
-      user_image: imageBuffer, // Stocker l'image sous forme de Buffer
+      ...userData,
+      role: "client",
+      user_image: imageBuffer
     });
 
-    // Supprimer le fichier temporaire après l'avoir stocké dans la base de données
+    // Nettoyage du fichier temporaire
     fs.unlinkSync(req.file.path);
 
-    res.status(200).json({ user });
+    res.status(201).json({ 
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Nettoyage en cas d'erreur
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    
+    console.error("Erreur serveur :", error);
+    res.status(500).json({ 
+      success: false,
+      message: process.env.NODE_ENV === 'development' 
+        ? error.message 
+        : "Erreur interne du serveur"
+    });
   }
 };
-
 // add admin
 module.exports.addUserAdmin = async (req, res) => {
   try {
