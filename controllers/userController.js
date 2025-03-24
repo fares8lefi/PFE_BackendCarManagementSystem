@@ -1,15 +1,13 @@
 const { models } = require("mongoose");
 const userModel = require("../models/userSchema");
 const fs = require("fs");
-const jwt = require("jsonwebtoken");  
+const jwt = require("jsonwebtoken");
 
-
-const maxTime = 24 *60 * 60 //24H
+const maxTime = 24 * 60 * 60; //24H
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.net_Secret, { expiresIn: maxTime });
 };
-
 
 module.exports.addUserClient = async (req, res) => {
   try {
@@ -56,7 +54,9 @@ module.exports.addUserClientImgOf = async (req, res) => {
 
     // Vérification des données utilisateur
     if (!req.body.user) {
-      return res.status(400).json({ message: "Données utilisateur manquantes" });
+      return res
+        .status(400)
+        .json({ message: "Données utilisateur manquantes" });
     }
 
     // Parsing sécurisé
@@ -68,46 +68,46 @@ module.exports.addUserClientImgOf = async (req, res) => {
     }
 
     // Validation des champs
-    const requiredFields = ['username', 'email', 'password'];
-    const missingFields = requiredFields.filter(field => !userData[field]);
+    const requiredFields = ["username", "email", "password"];
+    const missingFields = requiredFields.filter((field) => !userData[field]);
     if (missingFields.length > 0) {
       return res.status(400).json({
-        message: `Champs manquants : ${missingFields.join(', ')}`
+        message: `Champs manquants : ${missingFields.join(", ")}`,
       });
     }
 
     // Conversion de l'image
     const imageBuffer = fs.readFileSync(req.file.path);
-    
+
     // Création de l'utilisateur
     const user = await userModel.create({
       ...userData,
       role: "client",
-      user_image: imageBuffer
+      user_image: imageBuffer,
     });
 
     // Nettoyage du fichier temporaire
     fs.unlinkSync(req.file.path);
 
-    res.status(201).json({ 
+    res.status(201).json({
       success: true,
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
-
   } catch (error) {
     // Nettoyage en cas d'erreur
     if (req.file?.path) fs.unlinkSync(req.file.path);
-    
+
     console.error("Erreur serveur :", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: process.env.NODE_ENV === 'development' 
-        ? error.message 
-        : "Erreur interne du serveur"
+      message:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Erreur interne du serveur",
     });
   }
 };
@@ -207,29 +207,39 @@ module.exports.loginUser = async function (req, res) {
     const { email, password } = req.body;
     const user = await userModel.login(email, password);
     const token = createToken(user._id);
-    console.log("Token généré :", token);
 
-    res.cookie("jwt_login", token, { // Nom du cookie : "jwt_login"
+    res.cookie("jwt_login", token, {
       httpOnly: true,
       maxAge: maxTime * 1000,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
     });
-    console.log("Cookie défini avec succès");
 
-    res.status(200).json({ user });
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      token, // Envoyer le token dans la réponse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+//log out function
+module.exports.logout = async (req, res) => {
+  try {
+    res.cookie("jwt_login", "", { httpOnly: false, maxAge: 1 });
+    res.status(200).json("logged");
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-//log out function 
-module.exports.logout= async (req,res) => {
-  try {
-
-      res.cookie("jwt_login", "", {httpOnly:false,maxAge:1})
-      res.status(200).json("logged")
-  } catch (error) {
-      res.status(500).json({message: error.message});
-  }
-}
 
 // serach and tri
 
