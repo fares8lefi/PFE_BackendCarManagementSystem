@@ -14,6 +14,7 @@ var carsRouter = require('./routes/carsRouter');
 var commentRouter = require('./routes/commentRouter');
 var notificationRouter = require('./routes/notificationsRouter');
 var favorisRouter = require('./routes/favorisRouter');
+var newsLetter = require('./routes/newsLetterRouter');
 
 var app = express();
 
@@ -79,6 +80,7 @@ app.use('/cars', carsRouter);
 app.use('/comment', commentRouter);
 app.use('/notification', notificationRouter);
 app.use('/favoris', favorisRouter);
+app.use('/newsLetter', newsLetter);
 
 // Middleware d'upload pour les routes nécessitant des fichiers
 app.use((req, res, next) => {
