@@ -13,7 +13,7 @@ router.post('/addUserClientImgOf', upload.single("user_image"), userController.a
 router.put('/UpdateUserClientbyId/:id', userController.UpdateUserClientbyId);
 router.post('/addUserAdmin', userController.addUserAdmin);
 router.get('/getAllUsers', userController.getAllUsers);
-router.get('/getUsersbyId/:id', userController.getUsersbyId); // /:id qui sera affiché 
+router.get('/getUsersbyId', requireAuthUser,userController.getUsersbyId);
 router.delete('/deleteuserById/:id', userController.deleteuserById); // :id qui sera supprimé 
 router.get('/serachByUsername', userController.serachByUsername);
 module.exports = router;
