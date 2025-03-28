@@ -141,9 +141,20 @@ module.exports.getAllUsers = async (req, res) => {
 // find users by id
 module.exports.getUsersbyId = async (req, res) => {
   try {
-    const { id } = req.params;
-    const user = await userModel.findById(id);
-    res.status(200).json({ user });
+    const id = req.session.user._id;
+  const user = await userModel.findById(id);
+
+    if (!user) {
+      console.log("user non authentifié");
+    }
+
+    
+    const userData = user.toObject(); // Convertir en objet JS
+    if (user.user_image) {
+      userData.user_image = `data:image/jpeg;base64,${user.user_image.toString("base64")}`;
+    }
+
+    res.status(200).json({ user: userData });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -211,8 +222,7 @@ module.exports.loginUser = async function (req, res) {
     res.cookie("jwt_login", token, {
       httpOnly: true,
       maxAge: maxTime * 1000,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
+
     });
 
     res.status(200).json({
@@ -226,7 +236,6 @@ module.exports.loginUser = async function (req, res) {
     });
   } catch (error) {
     res.status(500).json({
-      success: false,
       message: error.message,
     });
   }
