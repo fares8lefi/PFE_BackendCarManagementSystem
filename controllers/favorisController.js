@@ -26,46 +26,70 @@ module.exports.addCarToFavorites = async (req, res) => {
 
 module.exports.getUserFavorites = async (req, res) => {
   try {
-    
-    if (!req.session.user) {
-      console.log("user non authentifié");
+    // Au lieu de findOne, vous pouvez populater les voitures complètes
+    const favoris = await Favoris.findOne({ userId: req.session.user._id })
+      .populate({
+        path: "cars",
+        model: Car,
+        select: "marque model year price fuelType transmission cars_images",
+      })
+      .lean(); // .lean() pour avoir un objet JS direct
+
+    if (!favoris || !favoris.cars) {
+      return res.status(200).json({ success: true, favorites: [] });
     }
 
-    // Récupérer les favoris avec les détails des voitures
-    const favoris = await Favoris.findOne({
-      userId: req.session.user._id,
-    }).populate({
-      path: "cars",
-      model: Car, // la table qui stock les donnés (le model mongoose)
-      select: "marque model year price", // les colone de la tables qui sera affiché 
+    // Convertir les images en base64
+    favoris.cars = favoris.cars.map((car) => {
+      if (car.cars_images && car.cars_images.length > 0) {
+        car.cars_images = car.cars_images.map(
+          (imgBuffer) =>
+            `data:image/jpeg;base64,${imgBuffer.toString("base64")}`
+        );
+      } else {
+        car.cars_images = [];
+      }
+      return car;
     });
 
-    if (!favoris) {
-      console.log(" aucune favoris trouvé");
-    }
-
-    res.status(200).json({ favoris });
+    // On renvoie directement le tableau complet
+    res.status(200).json({
+      success: true,
+      favorites: favoris.cars,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message,});
+    res.status(500).json({ message: error.message });
   }
 };
 
-// delete favoris 
+// delete favoris
 module.exports.deleteFavoris = async (req, res) => {
   try {
-    
     const userId = req.session.user._id;
-    if(!userId){
-      res.status(200).json({message :"user non authentifié"});
+    if (!userId) {
+      return res.status(401).json({ message: "user non authentifié" });
     }
+
     const { carId } = req.body;
+
+    if (!carId) {
+      return res.status(400).json({ message: "ID du car manquant" });
+    }
+    // Suppression du favori
     const updatedFavoris = await Favoris.findOneAndUpdate(
-      { userId }, 
-      { $pull: { cars: carId } }, // Correction du nom du champ
-      { new: true } // Retourne le document modifié
+      { userId },
+      { $pull: { cars: carId } },
+      { new: true }
     );
-    res.status(200).json({ updatedFavoris });
+
+    if (!updatedFavoris) {
+      return res
+        .status(500)
+        .json({ message: "Erreur lors de la mise à jour des favoris" });
+    }
+
+    return res.status(200).json({ favorites: updatedFavoris.cars });
   } catch (error) {
-    res.status(500).json({ message: error.message,});
+    return res.status(500).json({ message: error.message });
   }
 };
