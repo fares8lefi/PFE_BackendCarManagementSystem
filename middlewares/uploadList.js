@@ -2,7 +2,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Créer le dossier 'public/files' s'il n'existe pas
+
 const uploadPath = "public/files";
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
@@ -10,7 +10,7 @@ if (!fs.existsSync(uploadPath)) {
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadPath); // Dossier où les fichiers seront sauvegardés
+    cb(null, uploadPath); 
   },
   filename: function (req, file, cb) {
     const originalName = file.originalname;
@@ -25,7 +25,7 @@ var storage = multer.diskStorage({
       fileIndex++;
     }
 
-    cb(null, fileName); // Renommer le fichier si nécessaire
+    cb(null, fileName); 
   },
 });
 
