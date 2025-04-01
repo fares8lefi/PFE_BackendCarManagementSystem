@@ -13,6 +13,7 @@ router.get('/getAllCarsByMarqueFiltringByYear', carController.getAllCarsByMarque
 router.get('/getAllCarsByMarqueFiltringBetween', carController.getAllCarsByMarqueFiltringBetween);
 router.put('/UpdateCarById/:id', carController.UpdateCarById);
 router.delete('/deleteCarByID/:carId', carController.deleteCarByID);
+router.get('/getUserCars',requireAuthUser,carController.getUserCars);
 
 
 module.exports = router;
