@@ -244,3 +244,30 @@ module.exports.getAllCarsByMarqueFiltringBetween = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+//get user cars 
+
+module.exports.getUserCars = async (req, res) => {
+  try {
+    const userId =req.session.user._id;
+
+    if (!userId) {
+      console.log("user non trouvé")
+    }
+
+    
+    const userCars = await carModel.find({ userID: userId });
+
+    // Convertir le buffer 
+    const cars = userCars.map(car => ({
+      ...car._doc,
+      cars_images: car.cars_images.length > 0 ? 
+        `data:image/png;base64,${car.cars_images[0].toString('base64')}` : 
+        null
+    }));
+
+    res.status(200).json({ cars: cars });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
