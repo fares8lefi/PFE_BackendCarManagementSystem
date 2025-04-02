@@ -56,11 +56,11 @@ module.exports.addCarImages = async (req, res) => {
 
     // Supprimer les fichiers temporaires après lecture
     req.files.forEach((file) => fs.unlinkSync(file.path));
-    
+
     const annonceUrl = `http://localhost:3000/annonce/${car._id}`;
     const qrCodeDataUrl = await QRCode.toDataURL(annonceUrl);
 
-    res.status(200).json({ car ,qrCode: qrCodeDataUrl });
+    res.status(200).json({ car, qrCode: qrCodeDataUrl });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -115,13 +115,19 @@ module.exports.getCarById = async function (req, res) {
 // modification d'une car
 module.exports.UpdateCarById = async function (req, res) {
   try {
-    const { marque, model, year, price, description } = req.body;
-    const { id } = req.params;
-    await carModel.findByIdAndUpdate(id, {
-      $set: { marque, model, year, price, description },
-    });
-    const update = await carModel.findById(id);
-    res.status(200).json({ update });
+    const { carId } = req.params;
+    const updates = req.body;
+
+    if (!carId) {
+      return res.status(400).json({ message: "id car invalide" });
+    }
+
+    const updatedCar = await carModel.findByIdAndUpdate(
+      carId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+    res.status(200).json(updatedCar);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -130,19 +136,17 @@ module.exports.UpdateCarById = async function (req, res) {
 
 module.exports.deleteCarByID = async function (req, res) {
   try {
-    const carId = req.params.carId;
+    const { carId } = req.body;
     const car = await carModel.findById(carId);
 
     if (!car) {
-      return res.status(404).json({ message: "Voiture non trouvée" });
+      console.log("car non found");
     }
     //user id pour la mise a jour
     const userId = car.userID;
-    console.log("userId ", userId);
+    // console.log("userId ", userId);
     if (!userId) {
-      return res
-        .status(400)
-        .json({ message: "Vendeur non associé à cette voiture" });
+      console.log("user non found");
     }
 
     //Suppression du car
@@ -155,8 +159,7 @@ module.exports.deleteCarByID = async function (req, res) {
 
     res.status(200).json({ message: "Voiture supprimée avec succès" });
   } catch (error) {
-    console.error("Erreur :", error);
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -245,25 +248,25 @@ module.exports.getAllCarsByMarqueFiltringBetween = async (req, res) => {
   }
 };
 
-//get user cars 
+//get user cars
 
 module.exports.getUserCars = async (req, res) => {
   try {
-    const userId =req.session.user._id;
+    const userId = req.session.user._id;
 
     if (!userId) {
-      console.log("user non trouvé")
+      console.log("user non trouvé");
     }
 
-    
     const userCars = await carModel.find({ userID: userId });
 
-    // Convertir le buffer 
-    const cars = userCars.map(car => ({
+    // Convertir le buffer
+    const cars = userCars.map((car) => ({
       ...car._doc,
-      cars_images: car.cars_images.length > 0 ? 
-        `data:image/png;base64,${car.cars_images[0].toString('base64')}` : 
-        null
+      cars_images:
+        car.cars_images.length > 0
+          ? `data:image/png;base64,${car.cars_images[0].toString("base64")}`
+          : null,
     }));
 
     res.status(200).json({ cars: cars });

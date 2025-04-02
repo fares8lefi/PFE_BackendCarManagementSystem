@@ -11,8 +11,8 @@ router.get('/getAllCarsByMarque', carController.getAllCarsByMarque);
 router.get('/getAllCarsByMarqueFiltringByPrice', carController.getAllCarsByMarqueFiltringByPrice);
 router.get('/getAllCarsByMarqueFiltringByYear', carController.getAllCarsByMarqueFiltringByYear);
 router.get('/getAllCarsByMarqueFiltringBetween', carController.getAllCarsByMarqueFiltringBetween);
-router.put('/UpdateCarById/:id', carController.UpdateCarById);
-router.delete('/deleteCarByID/:carId', carController.deleteCarByID);
+router.put('/UpdateCarById/:carId',requireAuthUser,carController.UpdateCarById);
+router.delete('/deleteCarByID',requireAuthUser,carController.deleteCarByID);
 router.get('/getUserCars',requireAuthUser,carController.getUserCars);
 
 
