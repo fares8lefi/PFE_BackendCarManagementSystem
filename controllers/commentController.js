@@ -61,13 +61,33 @@ module.exports.getCommentsByCar = async (req, res) => {
       .find({ carId })
       .populate({
         path: "userId",
-        select: "username  createdAt",
+        select: "username user_image createdAt",
       })
-      .sort({ createdAt: -1 }); // le plus nouveau affichele premier
+      .sort({ createdAt: -1 });
 
-    res.status(200).json({ comments });
+    // Conversion du buffer en Base64 pour chaque image utilisateur
+    const commentsList = comments.map((comment) => {
+      const commentObj = comment.toObject();
+      if (commentObj.userId && commentObj.userId.user_image) {
+        // Vérifier si c'est un objet { data, contentType }
+        if (commentObj.userId.user_image.data && commentObj.userId.user_image.contentType) {
+          commentObj.userId.user_image = 
+            `data:${commentObj.userId.user_image.contentType};base64,` +
+             commentObj.userId.user_image.data.toString("base64");
+        } 
+        // Sinon, si c'est juste un Buffer 
+        else {
+          commentObj.userId.user_image = 
+            "data:image/jpg;base64," + 
+            commentObj.userId.user_image.toString("base64");
+        }
+      }
+      return commentObj;
+    });
+
+    res.status(200).json({ comments: commentsList });
   } catch (error) {
-    res.status(200).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
