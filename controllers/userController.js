@@ -2,7 +2,9 @@ const { models } = require("mongoose");
 const userModel = require("../models/userSchema");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
-
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 const maxTime = 24 * 60 * 60; //24H
 
 const createToken = (id) => {
@@ -43,7 +45,7 @@ module.exports.addUserClientImg = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// add image tp base donné
+
 
 module.exports.addUserClientImgOf = async (req, res) => {
   try {
@@ -142,18 +144,19 @@ module.exports.getAllUsers = async (req, res) => {
 module.exports.getUsersbyId = async (req, res) => {
   try {
     const id = req.session.user._id;
-  const user = await userModel.findById(id);
-
+    const user = await userModel.findById(id);
+  
     if (!user) {
       console.log("user non authentifié");
     }
-
-    
-    const userData = user.toObject(); // Convertir en objet JS
-    if (user.user_image) {
-      userData.user_image = `data:image/jpeg;base64,${user.user_image.toString("base64")}`;
+  
+    const userData = user.toObject();
+    if (user.user_image && user.user_image.data) {
+      userData.user_image = `data:${user.user_image.contentType};base64,${user.user_image.data.toString("base64")}`;
+    } else {
+      userData.user_image = '/default-avatar.png';
     }
-
+  
     res.status(200).json({ user: userData });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -179,20 +182,48 @@ module.exports.deleteuserById = async (req, res) => {
 };
 // update client :
 
-module.exports.UpdateUserClientbyId = async (req, res) => {
+exports.UpdateUserClientbyId = async (req, res) => {
   try {
-    const { username, email } = req.body; // source de l'entré du data
-    const role = "client";
-    const { id } = req.params;
-    await userModel.findByIdAndUpdate(id, {
-      $set: { username, email },
-    });
-    const update = await userModel.findById(id);
-    res.status(200).json({ update });
+    const userId = req.session.user._id;
+
+    // Validation des données
+    if (!req.body.username || !req.body.email) {
+      return res.status(400).json({ message: "Champs requis manquants" });
+    }
+
+    const updateData = {
+      username: req.body.username,
+      email: req.body.email
+    };
+
+    // Gestion de l'image 
+    if (req.file) {
+      const fileBuffer = await fs.promises.readFile(req.file.path);
+      updateData.user_image = {
+        data: fileBuffer, // Buffer obtenu depuis le fichier
+        contentType: req.file.mimetype
+      };
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    // Conversion de l'image en base64 pour l'envoi vers le front-end
+    const userResponse = updatedUser.toObject();
+    if (updatedUser.user_image) {
+      userResponse.user_image = `data:${updatedUser.user_image.contentType};base64,${updatedUser.user_image.data.toString('base64')}`;
+    }
+
+    res.status(200).json(userResponse);
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // search
 
