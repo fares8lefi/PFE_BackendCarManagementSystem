@@ -2,37 +2,67 @@ const commentModel = require("../models/commentSchema");
 const userModel = require("../models/userSchema");
 const carModel = require("../models/carShema");
 const mongoose = require("mongoose");
+const notificationModel = require('../models/notificationSchema');
 
 module.exports.addComment = async (req, res) => {
   try {
-    const userId = req.session.user._id;
-    if (!userId) return res.status(401).json({ message: "Non authentifié" });
-
+    
+    const userId = req.session.user?._id;
+    //vericfie des données
     const { content, carId } = req.body;
-    // Création du commentaire
-    const comment = await commentModel.create({ content, userId, carId });
+    if (!content || !carId) {
+      return res.status(400).json({ message: "Contenu et ID de voiture requis" });
+    }
 
-    const createComment = await commentModel.findById(comment._id).populate({
-      path: "userId",
-      select: "username ",
+    const comment = await commentModel.create({ 
+      content,
+      userId,
+      carId 
     });
 
-    //update els relations
+    // les relations
+    const populatedComment = await commentModel.findById(comment._id)
+      .populate({
+        path: 'userId',
+        select: 'username',
+        model: 'User' 
+      })
+      .populate({
+        path: 'carId',
+        model: 'carModel',
+        populate: {
+          path: 'userID',
+          model: 'User'
+        }
+      });
+
+   
     await Promise.all([
-      carModel.findByIdAndUpdate(carId, {
-        $push: { comments: comment._id },
+      carModel.findByIdAndUpdate(carId, { 
+        $push: { commentId: comment._id } 
       }),
-      userModel.findByIdAndUpdate(userId, {
-        $push: { comments: comment._id },
-      }),
+      userModel.findByIdAndUpdate(userId, { 
+        $push: { commentId: comment._id }
+      })
     ]);
 
-    res.status(201).json(createComment);
+    // craeaion du notifications
+    if (populatedComment.carId?.userID?._id.toString() !== userId.toString()) {
+      await notificationModel.create({
+        content: `Nouveau commentaire sur votre ${populatedComment.carId.marque} ${populatedComment.carId.model}`,
+        recipient: populatedComment.carId.userID._id 
+      });
+    }
+
+    // 7. Réponse formatée
+    res.status(201).json({
+      comment
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
 };
-
 // delete comment
 module.exports.deleteComment = async (req, res) => {
   try {
@@ -42,9 +72,9 @@ module.exports.deleteComment = async (req, res) => {
       res.status(200).json({ message: "user non authentifié" });
     }
     const deletedComment = await commentModel.findOneAndDelete({
-      _id: commentId, // Vérifie l'ID du commentaire
-      user: userId, // Vérifie l'auteur du commentaire
-      car: carId, // Vérifie la voiture associée
+      _id: commentId, 
+      user: userId, 
+      car: carId, 
     });
     res.status(200).json({ deletedComment });
   } catch (error) {
@@ -69,7 +99,7 @@ module.exports.getCommentsByCar = async (req, res) => {
     const commentsList = comments.map((comment) => {
       const commentObj = comment.toObject();
       if (commentObj.userId && commentObj.userId.user_image) {
-        // Vérifier si c'est un objet { data, contentType }
+        // Vérifier si c'est un objet 
         if (commentObj.userId.user_image.data && commentObj.userId.user_image.contentType) {
           commentObj.userId.user_image = 
             `data:${commentObj.userId.user_image.contentType};base64,` +
