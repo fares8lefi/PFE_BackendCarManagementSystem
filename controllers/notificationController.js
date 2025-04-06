@@ -8,9 +8,6 @@ module.exports.createNotification = async (req, res) => {
     const notification = new Notification({ recipient, content });
     const newNotification = await notification.save();
 
-    // Émettre un événement Socket.IO pour informer les clients connectés de la nouvelle notification
-    // io.emit('newNotification', newNotification);
-
     // Ajouter la notification à l'utilisateur correspondant
     await User.updateOne(
       { _id: recipient },
@@ -53,7 +50,7 @@ module.exports.broadcastNotifToAll = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// supprimer tous les notifications et initioalisation du réference
+//delete
 module.exports.deleteDistributedNotifications = async (req, res) => {
   try {
     await Notification.deleteMany({});
@@ -61,7 +58,7 @@ module.exports.deleteDistributedNotifications = async (req, res) => {
 
     for (const user of users) {
       if (user.notifications && user.notifications.length > 0) {
-        user.notifications = []; // Réinitialiser le tableau des notifications
+        user.notifications = []; // Réinitialiser
         await user.save(); // Sauvegarder les modifications
       }
     }
@@ -91,12 +88,40 @@ module.exports.deleteAllUserNotifications = async (req, res) => {
 // get user notifications
 module.exports.getUserNotifications = async (req, res) => {
   try {
-    const userId = req.session.user._id;
-    const notifications = await Notification.find({ recipient: userId }).sort({
-      createdAt: -1,
-    }); // Trier par date de création
+    const userId = req.session.user?._id;
+    if (!userId) return res.status(401).json({ message: "Non authentifié" });
 
-    res.status(200).json({ notifications });
+    const notifications = await Notification.find({ recipient: userId })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    res.status(200).json({
+      success: true,
+      notifications: notifications || [],
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// marqué un commentaire comme lu
+module.exports.markAsRead = async (req, res) => {
+  try {
+    const userId = req.session.user._id;
+
+    const result = await Notification.updateMany(
+      {
+        recipient: userId,
+        read: false,
+      },
+      {
+        $set: {
+          read: true,
+        },
+      }
+    );
+
+    res.status(500).json({ result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
