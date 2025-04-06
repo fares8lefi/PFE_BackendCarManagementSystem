@@ -9,6 +9,7 @@ router.post("/broadcastNotifToAll", notification.broadcastNotifToAll);
 router.delete("/deleteDistributedNotifications", notification.deleteDistributedNotifications);
 router.delete("/deleteAllUserNotifications",requireAuthUser,notification.deleteAllUserNotifications);
 router.get("/getUserNotifications",requireAuthUser,notification.getUserNotifications);
+router.put("/markAsRead",requireAuthUser,notification.markAsRead);
 
 
 module.exports = router;
