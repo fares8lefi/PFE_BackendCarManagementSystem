@@ -274,3 +274,74 @@ module.exports.getUserCars = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+module.exports.getCarsFiltered = async (req, res) => {
+  try {
+    const {
+      marque,
+      minPrice,
+      maxPrice,
+      minYear,
+      maxYear,
+      maxMileage,
+      energy,
+      transmission
+    } = req.query;
+
+    // Ici, marque est optionnel si vous voulez autoriser une recherche globale
+    const filter = {};
+    if (marque) {
+      filter.marque = { $regex: marque, $options: "i" };
+    }
+
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    if (minYear || maxYear) {
+      filter.year = {};
+      if (minYear) filter.year.$gte = Number(minYear);
+      if (maxYear) filter.year.$lte = Number(maxYear);
+    }
+
+    if (maxMileage) {
+      filter.km = { $lte: Number(maxMileage) };
+    }
+
+    if (energy) {
+      filter.Energie = energy;
+    }
+
+    if (transmission) {
+      // En supposant que le champ transmission est "Boite" dans votre BDD
+      filter.Boite = transmission;
+    }
+
+    const cars = await carModel
+      .find(filter)
+      .populate('userID', 'username email phone')
+      .populate('commentId')
+      .sort({ price: -1, year: -1 })
+      .lean();
+
+    const carsWithImages = cars.map(car => ({
+      ...car,
+      cars_images: car.cars_images.map(img => ({
+        data: img.toString('base64'),
+        contentType: 'image/png'
+      }))
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: carsWithImages.length,
+      cars: carsWithImages
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
