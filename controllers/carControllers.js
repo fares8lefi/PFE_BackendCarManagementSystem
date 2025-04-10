@@ -344,4 +344,35 @@ module.exports.getCarsFiltered = async (req, res) => {
   }
 };
 
+module.exports.getCarsByMarque = async (req, res) => {
+  try {
+    const { marque } = req.query;
 
+    const filter = {};
+    if (marque) {
+      filter.marque = { $regex: marque, $options: "i" };
+    }
+
+    const cars = await carModel
+      .find(filter)
+      .populate("userID", "username email phone")
+      .populate("commentId")
+      .sort({ price: -1, year: -1 })
+      .lean();
+
+    const carsWithImages = cars.map((car) => ({
+      ...car,
+      cars_images: car.cars_images.map((img) => ({
+        data: img.toString("base64"),
+        contentType: "image/png",
+      })),
+    }));
+
+    res.status(200).json({
+      success: true,
+      cars: carsWithImages,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
