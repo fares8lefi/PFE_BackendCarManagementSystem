@@ -11,6 +11,7 @@ const {requireAuthUser} = require('../middlewares/authMiddelwares');
 router.post('/loginUser',requireAuthUser,userController.loginUser); 
 router.post('/addUserClientImgOf', upload.single("user_image"), userController.addUserClientImgOf);
 router.put('/UpdateUserClientbyId',requireAuthUser,upload.single("user_image"),userController.UpdateUserClientbyId);
+router.post('/logout',requireAuthUser,userController.logout);
 router.post('/addUserAdmin', userController.addUserAdmin);
 router.get('/getAllUsers', userController.getAllUsers);
 router.get('/getUsersbyId', requireAuthUser,userController.getUsersbyId);
