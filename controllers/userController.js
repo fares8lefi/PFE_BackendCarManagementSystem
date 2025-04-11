@@ -2,7 +2,7 @@ const { models } = require("mongoose");
 const userModel = require("../models/userSchema");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
-const multer = require('multer');
+const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const maxTime = 24 * 60 * 60; //24H
@@ -45,7 +45,6 @@ module.exports.addUserClientImg = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 module.exports.addUserClientImgOf = async (req, res) => {
   try {
@@ -145,18 +144,20 @@ module.exports.getUsersbyId = async (req, res) => {
   try {
     const id = req.session.user._id;
     const user = await userModel.findById(id);
-  
+
     if (!user) {
       console.log("user non authentifié");
     }
-  
+
     const userData = user.toObject();
     if (user.user_image && user.user_image.data) {
-      userData.user_image = `data:${user.user_image.contentType};base64,${user.user_image.data.toString("base64")}`;
+      userData.user_image = `data:${
+        user.user_image.contentType
+      };base64,${user.user_image.data.toString("base64")}`;
     } else {
-      userData.user_image = '/default-avatar.png';
+      userData.user_image = "/default-avatar.png";
     }
-  
+
     res.status(200).json({ user: userData });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -193,37 +194,35 @@ exports.UpdateUserClientbyId = async (req, res) => {
 
     const updateData = {
       username: req.body.username,
-      email: req.body.email
+      email: req.body.email,
     };
 
-    // Gestion de l'image 
+    // Gestion de l'image
     if (req.file) {
       const fileBuffer = await fs.promises.readFile(req.file.path);
       updateData.user_image = {
         data: fileBuffer, // Buffer obtenu depuis le fichier
-        contentType: req.file.mimetype
+        contentType: req.file.mimetype,
       };
     }
 
-    const updatedUser = await userModel.findByIdAndUpdate(
-      userId,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
+    const updatedUser = await userModel
+      .findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
+      .select("-password");
 
     // Conversion de l'image en base64 pour l'envoi vers le front-end
     const userResponse = updatedUser.toObject();
     if (updatedUser.user_image) {
-      userResponse.user_image = `data:${updatedUser.user_image.contentType};base64,${updatedUser.user_image.data.toString('base64')}`;
+      userResponse.user_image = `data:${
+        updatedUser.user_image.contentType
+      };base64,${updatedUser.user_image.data.toString("base64")}`;
     }
 
     res.status(200).json(userResponse);
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // search
 
@@ -253,7 +252,6 @@ module.exports.loginUser = async function (req, res) {
     res.cookie("jwt_login", token, {
       httpOnly: true,
       maxAge: maxTime * 1000,
-
     });
 
     res.status(200).json({
@@ -281,33 +279,18 @@ module.exports.logout = async (req, res) => {
   }
 };
 
-// serach and tri
-
-/*
- module.exports.serachByUsername = async (req, res) => {
+module.exports.logoutUser = async function (req, res) {
   try {
-    const {username} = req.query ;
-  
-    const userList = await userModel.find().sort(paramétre :1).limit(nombre aaffiché); 1 as / -1 déc
+    // Réinitialiser le cookie "jwt_login"
+    res.cookie("jwt_login", "", {
+      maxAge: 1,
+      httpOnly: true,
+    });
 
-    res.status(200).json({userList});
+    res.status(200).json({
+      message: "Déconnexion réussie",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-*/
-
-/*
- module.exports.serachButWeen = async (req, res) => {
-  try {
-    const max = req.query.max ;
-    const min = req.query.min ;
-  
-    const userList = await userModel.find({age {$gt : min ,$lt : max}}).
-
-    res.status(200).json({userList});
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-*/
