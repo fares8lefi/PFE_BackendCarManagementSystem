@@ -89,21 +89,25 @@ module.exports.deleteAllUserNotifications = async (req, res) => {
 module.exports.getUserNotifications = async (req, res) => {
   try {
     const userId = req.session.user?._id;
-    if (!userId) return res.status(401).json({ message: "Non authentifié" });
+    //console.log("USER SESSION ID:", req.session.user?._id);
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+    }
 
     const notifications = await Notification.find({ recipient: userId })
       .sort({ createdAt: -1 })
       .lean()
       .exec();
 
-    res.status(200).json({
-      success: true,
-      notifications: notifications || [],
-    });
+      res.status(200).json({
+        success: true,
+        notifications: notifications || [],
+      });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 // marqué un commentaire comme lu
 module.exports.markAsRead = async (req, res) => {
   try {
