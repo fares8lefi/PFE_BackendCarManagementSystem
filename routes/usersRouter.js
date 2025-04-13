@@ -17,5 +17,6 @@ router.get('/getAllUsers', userController.getAllUsers);
 router.get('/getUsersbyId', requireAuthUser,userController.getUsersbyId);
 router.delete('/deleteuserById/:id', userController.deleteuserById); // :id qui sera supprimé 
 router.get('/serachByUsername', userController.serachByUsername);
+router.put('/changePassword',requireAuthUser,userController.changePassword);
 module.exports = router;
  
