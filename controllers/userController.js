@@ -294,3 +294,29 @@ module.exports.logoutUser = async function (req, res) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId= req.session.user._id;
+    console.log("user IDDDDDDDDDDD : ",userId);
+    console.log("user curent password  : ",currentPassword);
+    console.log("user new password : ",newPassword);
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    await user.changePassword(currentPassword, newPassword);
+    
+    res.json({
+      success: true,
+      message: "Mot de passe mis à jour avec succès",
+    });
+    
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

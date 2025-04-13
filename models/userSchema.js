@@ -78,5 +78,23 @@ userSchema.statics.login = async function (email, password) {
     throw new Error("email not found");
   }
 };
+
+userSchema.methods.changePassword = async function (currentPassword, newPassword) {
+  
+  const isMatch = await bcrypt.compare(currentPassword, this.password);
+  if (!isMatch) {
+    throw new Error("mot de passe actuel incorrect");
+  }
+
+  
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    throw new Error("le mot de passe doit contenir une minuscule, une majuscule, un chiffre et un caractère spécial");
+  }
+
+  this.password = newPassword;
+  await this.save();
+  return this;
+};
 const User = mongoose.model("User", userSchema);
 module.exports = User;
