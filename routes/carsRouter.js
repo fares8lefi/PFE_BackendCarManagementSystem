@@ -14,6 +14,11 @@ router.get('/getAllCarsByMarqueFiltringBetween', carController.getAllCarsByMarqu
 router.put('/UpdateCarById/:carId',requireAuthUser,carController.UpdateCarById);
 router.delete('/deleteCarByID',requireAuthUser,carController.deleteCarByID);
 router.get('/getUserCars',requireAuthUser,carController.getUserCars);
-
+router.get('/getCarStats', requireAuthUser,carController.getCarStats);
+router.get('/getLatestCars', requireAuthUser,carController.getLatestCars);
+router.get('/getMonthlySalesStats', requireAuthUser,carController.getMonthlySalesStats);
+router.get('/getPriceStatsByBrand', requireAuthUser,carController.getPriceStatsByBrand);
+router.get('/getDailyViewsStats',requireAuthUser, carController.getDailyViewsStats);
+router.get('/getCarsByYear', requireAuthUser,carController.getCarsByYear);
 
 module.exports = router;
