@@ -376,3 +376,136 @@ module.exports.getCarsByMarque = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+module.exports.getCarStats= async (req, res) => {
+  try {
+      const stats = await carModel.aggregate([
+          {
+              $facet: {
+                  // Nombre total de voitures
+                  'totalCars': [{ $count: 'count' }],
+                  // Répartition par énergie
+                  'energyTypes': [
+                      { $group: { _id: '$Energie', count: { $sum: 1 } } }
+                  ],
+                  // Répartition par marque
+                  'brands': [
+                      { $group: { _id: '$marque', count: { $sum: 1 } } },
+                      { $sort: { count: -1 } },
+                      { $limit: 5 }
+                  ],
+                  // Prix moyen
+                  'averagePrice': [
+                      { $group: { _id: null, avg: { $avg: '$price' } } }
+                  ],
+                  // Statistiques des vues (count)
+                  'viewsStats': [
+                      { $group: { _id: null, totalViews: { $sum: '$count' } } }
+                  ]
+              }
+          }
+      ]);
+
+      res.json(stats[0]);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports.getLatestCars=async (req, res) => {
+  try {
+      const latestCars = await carModel.find()
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .populate('userID', 'username email')
+          .select('-cars_images'); // Exclure les images pour la performance
+
+      res.json(latestCars);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports.getMonthlySalesStats=async (req, res) => {
+  try {
+      const monthlyStats = await carModel.aggregate([
+          {
+              $group: {
+                  _id: {
+                      year: { $year: '$createdAt' },
+                      month: { $month: '$createdAt' }
+                  },
+                  count: { $sum: 1 },
+                  totalValue: { $sum: '$price' }
+              }
+          },
+          { $sort: { '_id.year': -1, '_id.month': -1 } },
+          { $limit: 6 }
+      ]);
+
+      res.json(monthlyStats);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports.getPriceStatsByBrand= async (req, res) => {
+  try {
+      const priceStats = await carModel.aggregate([
+          {
+              $group: {
+                  _id: '$marque',
+                  avgPrice: { $avg: '$price' },
+                  minPrice: { $min: '$price' },
+                  maxPrice: { $max: '$price' },
+                  totalCars: { $sum: 1 }
+              }
+          },
+          { $sort: { totalCars: -1 } },
+          { $limit: 10 }
+      ]);
+
+      res.json(priceStats);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}
+module.exports. getDailyViewsStats=async (req, res) => {
+  try {
+      const viewsStats = await carModel.aggregate([
+          {
+              $group: {
+                  _id: {
+                      date: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } }
+                  },
+                  totalViews: { $sum: '$count' }
+              }
+          },
+          { $sort: { '_id.date': -1 } },
+          { $limit: 7 }
+      ]);
+
+      res.json(viewsStats);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports. getCarsByYear= async (req, res) => {
+  try {
+      const yearStats = await Car.aggregate([
+          {
+              $group: {
+                  _id: '$year',
+                  count: { $sum: 1 }
+              }
+          },
+          { $sort: { _id: -1 } }
+      ]);
+
+      res.json(yearStats);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+}
