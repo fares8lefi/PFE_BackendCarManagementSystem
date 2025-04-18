@@ -57,7 +57,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // CORS config améliorée
 app.use(cors({
   origin: "http://localhost:5173",
-  methods: "GET,POST,PUT,DELETE",
+  methods: "GET,POST,PUT,DELETE ,PATCH",
   allowedHeaders: "Content-Type,Authorization ,Cache-Control",
   credentials: true
 }));
