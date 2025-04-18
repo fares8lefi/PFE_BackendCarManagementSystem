@@ -19,6 +19,6 @@ router.get('/getLatestCars', requireAuthUser,carController.getLatestCars);
 router.get('/getMonthlySalesStats', requireAuthUser,carController.getMonthlySalesStats);
 router.get('/getPriceStatsByBrand', requireAuthUser,carController.getPriceStatsByBrand);
 router.get('/getDailyViewsStats',requireAuthUser, carController.getDailyViewsStats);
-router.get('/getCarsByYear', requireAuthUser,carController.getCarsByYear);
+router.get('/getDailyCarAdditions', requireAuthUser,carController.getDailyCarAdditions);
 
 module.exports = router;
