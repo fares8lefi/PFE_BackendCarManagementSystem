@@ -15,8 +15,10 @@ router.post('/logout',requireAuthUser,userController.logout);
 router.post('/addUserAdmin', userController.addUserAdmin);
 router.get('/getAllUsers', userController.getAllUsers);
 router.get('/getUsersbyId', requireAuthUser,userController.getUsersbyId);
-router.delete('/deleteuserById/:id', userController.deleteuserById); // :id qui sera supprimé 
-router.get('/serachByUsername', userController.serachByUsername);
+router.delete('/deleteuserById', userController.deleteuserById); // :id qui sera supprimé 
+router.get('/searchUsers', userController.searchUsers);
 router.put('/changePassword',requireAuthUser,userController.changePassword);
+router.patch('/updateUserStatus/:id/status', userController.updateUserStatus);
 module.exports = router;
  
+
