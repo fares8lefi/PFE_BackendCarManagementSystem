@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["admin", "client"],
     },
+    status: {
+      type: String,
+      enum: ["Active", "blocked"],
+       default: 'Actif'
+    },
     user_image: {
       data: { type: Buffer, required: false },
       contentType: { type: String, required: false }
