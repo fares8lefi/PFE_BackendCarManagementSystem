@@ -32,12 +32,14 @@ module.exports.addUserClientImg = async (req, res) => {
   try {
     const { username, email, password } = req.body; // source de l'entré du data
     const role = "client";
+    const status ="Actif"
     const { fileName } = req.file;
     const user = await userModel.create({
       username: username,
       email: email,
       password: password,
       role: role,
+      status :status,
       user_image: fileName,
     });
     res.status(200).json({ user });
@@ -84,6 +86,7 @@ module.exports.addUserClientImgOf = async (req, res) => {
     const user = await userModel.create({
       ...userData,
       role: "client",
+      status:"Actif",
       user_image: imageBuffer,
     });
 
@@ -132,10 +135,10 @@ module.exports.addUserAdmin = async (req, res) => {
 // find all users
 module.exports.getAllUsers = async (req, res) => {
   try {
-    const userlist = await userModel.find();
-    res.status(200).json({ userlist });
+    const users = await userModel.find().select('-password');
+    res.status(200).json(users); 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({  error: error.message });
   }
 };
 
@@ -226,22 +229,50 @@ exports.UpdateUserClientbyId = async (req, res) => {
 
 // search
 
-module.exports.serachByUsername = async (req, res) => {
+module.exports.searchUsers = async (req, res) => {
   try {
-    const { username } = req.query;
-    if (!username) {
-      throw new Error("Username Not Found");
+    const { q } = req.query;
+    
+    if (!q) {
+      return res.status(400).json({ message: "Le terme de recherche est requis" });
     }
-    const userList = await userModel.find({
-      username: { $regex: username, $options: "i" },
-    });
 
-    res.status(200).json({ userList });
+    const users = await userModel.find({
+      $or: [
+        { username: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } }
+      ]
+    }).select('-password');
+
+    res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: "Erreur de recherche",
+      error: error.message 
+    });
   }
 };
+// controllers/userController.js
+exports.updateUserStatus = async (req, res) => {
+  try {
+    console.log("ID:", req.params.id);
+    console.log("Status reçu:", req.body.status);
+    const { status } = req.body;
+    const user = await userModel.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true, runValidators: true }
+    ).select('-password');
 
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message});
+  }
+};
 //login
 module.exports.loginUser = async function (req, res) {
   try {
@@ -260,6 +291,7 @@ module.exports.loginUser = async function (req, res) {
         id: user._id,
         email: user.email,
         role: user.role,
+        status :user.status,
       },
       token, // Envoyer le token dans la réponse
     });
