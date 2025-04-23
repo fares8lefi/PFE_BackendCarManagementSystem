@@ -19,6 +19,7 @@ router.delete('/deleteuserById', userController.deleteuserById); // :id qui sera
 router.get('/searchUsers', userController.searchUsers);
 router.put('/changePassword',requireAuthUser,userController.changePassword);
 router.patch('/updateUserStatus/:id/status', userController.updateUserStatus);
+router.delete('/deleteUser/:id', userController.deleteUser);
 module.exports = router;
  
 
