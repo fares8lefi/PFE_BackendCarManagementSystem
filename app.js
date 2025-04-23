@@ -15,7 +15,7 @@ var commentRouter = require('./routes/commentRouter');
 var notificationRouter = require('./routes/notificationsRouter');
 var favorisRouter = require('./routes/favorisRouter');
 var newsLetter = require('./routes/newsLetterRouter');
-
+var contactRouter = require('./routes/contactRouter');
 var app = express();
 
 // Configuration Multer
@@ -81,6 +81,7 @@ app.use('/comment', commentRouter);
 app.use('/notification', notificationRouter);
 app.use('/favoris', favorisRouter);
 app.use('/newsLetter', newsLetter);
+app.use('/contact', contactRouter);
 
 // Middleware d'upload pour les routes nécessitant des fichiers
 app.use((req, res, next) => {
