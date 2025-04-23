@@ -20,5 +20,6 @@ router.get('/getMonthlySalesStats', requireAuthUser,carController.getMonthlySale
 router.get('/getPriceStatsByBrand', requireAuthUser,carController.getPriceStatsByBrand);
 router.get('/getDailyViewsStats',requireAuthUser, carController.getDailyViewsStats);
 router.get('/getDailyCarAdditions', requireAuthUser,carController.getDailyCarAdditions);
+router.get('/getCarsByMarque',carController.getCarsByMarque);
 
 module.exports = router;
