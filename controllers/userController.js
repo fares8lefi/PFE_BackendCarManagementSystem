@@ -86,7 +86,7 @@ module.exports.addUserClientImgOf = async (req, res) => {
     const user = await userModel.create({
       ...userData,
       role: "client",
-      status:"Actif",
+      status:"Active",
       user_image: imageBuffer,
     });
 
@@ -271,6 +271,21 @@ exports.updateUserStatus = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ error: error.message});
+  }
+};
+
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await userModel.findByIdAndDelete(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    
+    res.status(200).json({ deletedUser: user});
+  } catch (error) {
+    res.status(400).json({ error: error.message});
   }
 };
 //login
