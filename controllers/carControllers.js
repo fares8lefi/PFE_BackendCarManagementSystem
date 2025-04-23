@@ -69,15 +69,18 @@ module.exports.addCarImages = async (req, res) => {
 // get all cars
 module.exports.getAllCars = async function (req, res) {
   try {
-    const cars = await carModel.find();
+    // Populate sur userID, uniquement le champ "username"
+    const cars = await carModel.find()
+      .populate('userID', 'username');
 
-    // Convertir les images Buffer en Base64
+    
     const carsWithImages = cars.map((car) => ({
       ...car._doc,
+      username: car.userID ? car.userID.username : null,
       cars_images:
-        car.cars_images.length > 0
-          ? `data:image/jpeg;base64,${car.cars_images[0].toString("base64")}`
-          : null, // Afficher seulement la première image
+        car.cars_images && car.cars_images.length > 0
+          ? `data:image/jpeg;base64,${car.cars_images[0].toString('base64')}`
+          : null,
     }));
 
     res.status(200).json({ cars: carsWithImages });
@@ -137,6 +140,7 @@ module.exports.UpdateCarById = async function (req, res) {
 module.exports.deleteCarByID = async function (req, res) {
   try {
     const { carId } = req.body;
+    console.log('ffffffffzfzefzefzefzefzefzef',carId)
     const car = await carModel.findById(carId);
 
     if (!car) {
