@@ -31,7 +31,7 @@ module.exports.getUserFavorites = async (req, res) => {
       .populate({
         path: "cars",
         model: Car,
-        select: "marque model year price fuelType transmission cars_images",
+        select: "marque model year price statut Boite Energie cars_images",
       })
       .lean(); // .lean() pour avoir un objet JS direct
 
