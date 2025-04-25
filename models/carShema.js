@@ -18,10 +18,11 @@ const carShema = new mongoose.Schema(
     Position: {type: String},
     description: { type: String },
     Puissance: { type: Number },
-    /*statut: {
+    statut: {
       type: String,
       enum: ["Vendu","Disponible"],
-    },*/
+      default: "Disponible"
+    },
     cars_images: [{ type: Buffer }],
 
     count: { type: Number, default: "0" },
