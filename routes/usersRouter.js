@@ -12,7 +12,7 @@ router.post('/loginUser',userController.loginUser);
 router.post('/addUserClientImgOf', upload.single("user_image"), userController.addUserClientImgOf);
 router.put('/UpdateUserClientbyId',requireAuthUser,upload.single("user_image"),userController.UpdateUserClientbyId);
 router.post('/logout',requireAuthUser,userController.logout);
-router.post('/addUserAdmin', userController.addUserAdmin);
+router.post('/addUserAdmin', upload.single("user_image"),userController.addUserAdmin);
 router.get('/getAllUsers', userController.getAllUsers);
 router.get('/getUsersbyId', requireAuthUser,userController.getUsersbyId);
 router.delete('/deleteuserById', userController.deleteuserById); // :id qui sera supprimé 
