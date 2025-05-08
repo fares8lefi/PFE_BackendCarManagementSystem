@@ -7,7 +7,6 @@ const {requireAuthUser} = require('../middlewares/authMiddelwares');
 router.post('/addCarImages',requireAuthUser,uploadfile.array('images', 10), carController.addCarImages);
 router.get('/getAllCars', carController.getAllCars);
 router.get('/getCarById/:id', carController.getCarById);
-router.get('/getAllCarsByMarque', carController.getAllCarsByMarque);
 router.get('/getAllCarsByMarqueFiltringByPrice', carController.getAllCarsByMarqueFiltringByPrice);
 router.get('/getAllCarsByMarqueFiltringByYear', carController.getAllCarsByMarqueFiltringByYear);
 router.get('/getAllCarsByMarqueFiltringBetween', carController.getAllCarsByMarqueFiltringBetween);
@@ -21,5 +20,6 @@ router.get('/getPriceStatsByBrand', requireAuthUser,carController.getPriceStatsB
 router.get('/getDailyViewsStats',requireAuthUser, carController.getDailyViewsStats);
 router.get('/getDailyCarAdditions', requireAuthUser,carController.getDailyCarAdditions);
 router.get('/getCarsByMarque',carController.getCarsByMarque);
+router.get('/getCarsFiltered',carController.getCarsFiltered);
 
 module.exports = router;
