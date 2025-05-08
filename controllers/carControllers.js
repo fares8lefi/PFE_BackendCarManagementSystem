@@ -142,17 +142,12 @@ module.exports.deleteCarByID = async function (req, res) {
     const { carId } = req.body;
     console.log('ffffffffzfzefzefzefzefzefzef',carId)
     const car = await carModel.findById(carId);
-
+    const userId = car.userID;
+    //console.log("userId ", userId);
     if (!car) {
       console.log("car non found");
     }
-    //user id pour la mise a jour
-    const userId = car.userID;
-    // console.log("userId ", userId);
-    if (!userId) {
-      console.log("user non found");
-    }
-
+    
     //Suppression du car
     await carModel.findByIdAndDelete(carId);
 
@@ -163,42 +158,13 @@ module.exports.deleteCarByID = async function (req, res) {
 
     res.status(200).json({ message: "Voiture supprimée avec succès" });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// suppression  sans relation
 
-// search
 
-module.exports.getAllCarsByMarque = async (req, res) => {
-  try {
-    const { marque } = req.query;
-    if (!marque) {
-      throw new Error("Marque Not Found");
-    }
-    const carList = await carModel.find({
-      marque: { $regex: marque, $options: "i" },
-    });
-    res.status(200).json({ carList });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// search and filltring
-
-module.exports.getAllCarsByPriceDes = async (req, res) => {
-  try {
-    const { price } = req.query;
-
-    const marqueList = await carModel.find().sort({ price: -1 });
-
-    res.status(200).json({ marqueList });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 //search and filtring  by price
 module.exports.getAllCarsByMarqueFiltringByPrice = async (req, res) => {
@@ -287,51 +253,52 @@ module.exports.getCarsFiltered = async (req, res) => {
       maxPrice,
       minYear,
       maxYear,
-      maxMileage,
-      energy,
-      transmission,
+      maxKm,         
+      Energie,
+      Boite,
     } = req.query;
 
-    // Ici, marque est optionnel si vous voulez autoriser une recherche globale
-    const filter = {};
-    if (marque) {
-      filter.marque = { $regex: marque, $options: "i" };
+    console.log("Les filtres sont :", marque, minPrice, maxPrice, minYear, maxYear, maxKm, Energie, Boite);
+
+    if (
+      !marque ||
+      !minPrice ||
+      !maxPrice ||
+      !minYear ||
+      !maxYear ||
+      !maxKm ||
+      !Energie ||
+      !Boite
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Tous les filtres doivent être appliqués.",
+      });
     }
 
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = Number(minPrice);
-      if (maxPrice) filter.price.$lte = Number(maxPrice);
-    }
-
-    if (minYear || maxYear) {
-      filter.year = {};
-      if (minYear) filter.year.$gte = Number(minYear);
-      if (maxYear) filter.year.$lte = Number(maxYear);
-    }
-
-    if (maxMileage) {
-      filter.km = { $lte: Number(maxMileage) };
-    }
-
-    if (energy) {
-      filter.Energie = energy;
-    }
-
-    if (transmission) {
-      // En supposant que le champ transmission est "Boite" dans votre BDD
-      filter.Boite = transmission;
-    }
+    const filter = {
+      marque: { $regex: marque, $options: "i" },
+      price: { $gte: Number(minPrice), $lte: Number(maxPrice) },
+      year: { $gte: Number(minYear), $lte: Number(maxYear) },
+      km: { $lte: Number(maxKm) },
+      Energie,
+      Boite,
+    };
 
     const cars = await carModel
       .find(filter)
-      .populate("userID", "username email phone")
+      .populate("userID", "username email phone ")
       .populate("commentId")
       .sort({ price: -1, year: -1 })
       .lean();
 
+    if (cars.length === 0) {
+      return res.status(404).json({ success: false, message: "Cars introuvables" });
+    }
+
     const carsWithImages = cars.map((car) => ({
       ...car,
+      statut :car.statut,
       cars_images: car.cars_images.map((img) => ({
         data: img.toString("base64"),
         contentType: "image/png",
@@ -347,6 +314,7 @@ module.exports.getCarsFiltered = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 module.exports.getCarsByMarque = async (req, res) => {
   try {
