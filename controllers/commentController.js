@@ -4,6 +4,8 @@ const carModel = require("../models/carShema");
 const mongoose = require("mongoose");
 const notificationModel = require('../models/notificationSchema');
 
+console.log('Serveur Node.js démarré');
+
 module.exports.addComment = async (req, res) => {
   try {
     
@@ -66,17 +68,30 @@ module.exports.addComment = async (req, res) => {
 // delete comment
 module.exports.deleteComment = async (req, res) => {
   try {
-    const userId = req.session.user._id;
+    const userId = req.session.user?._id;
     const { commentId, carId } = req.body;
+
     if (!userId) {
-      res.status(200).json({ message: "user non authentifié" });
+      return res.status(401).json({ message: "Utilisateur non authentifié" });
     }
-    const deletedComment = await commentModel.findOneAndDelete({
-      _id: commentId, 
-      user: userId, 
-      car: carId, 
-    });
-    res.status(200).json({ deletedComment });
+    if (!commentId || !carId) {
+      return res.status(400).json({ message: "commentId et carId sont requis" });
+    }
+
+    // Vérifier que le commentaire existe et appartient à l'utilisateur
+    const comment = await commentModel.findOne({ _id: commentId, userId: userId, carId: carId });
+    if (!comment) {
+      return res.status(404).json({ message: "Commentaire non trouvé ou non autorisé" });
+    }
+
+    // Suppression
+    await commentModel.deleteOne({ _id: commentId });
+
+    // Nettoyage des références
+    await carModel.findByIdAndUpdate(carId, { $pull: { commentId: commentId } });
+    await userModel.findByIdAndUpdate(userId, { $pull: { commentId: commentId } });
+
+    res.status(200).json({ message: "Commentaire supprimé avec succès", commentId });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -116,6 +131,73 @@ module.exports.getCommentsByCar = async (req, res) => {
     });
 
     res.status(200).json({ comments: commentsList });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.updateComment = async (req, res) => {
+  try {
+    const userId = req.session.user?._id;
+    const { commentId, content } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Utilisateur non authentifié" });
+    }
+    if (!commentId || !content) {
+      return res.status(400).json({ message: "commentId et contenu requis" });
+    }
+
+    // Vérifier que le commentaire existe et appartient à l'utilisateur
+    const comment = await commentModel.findOne({ _id: commentId, userId: userId });
+    if (!comment) {
+      return res.status(404).json({ message: "Commentaire non trouvé ou non autorisé" });
+    }
+
+    // Mise à jour du contenu
+    comment.content = content;
+    await comment.save();
+
+    res.status(200).json({ message: "Commentaire modifié avec succès", comment });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.DeleteCommentByAdmin = async (req, res) => {
+  try {
+    const sessionUserId = req.session.user?._id;
+
+    // Vérifier que l'utilisateur est connecté
+    if (!sessionUserId) {
+      return res.status(401).json({ message: "Utilisateur non authentifié" });
+    }
+
+    // Récupérer l'utilisateur en base
+    const user = await userModel.findById(sessionUserId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Accès refusé : admin requis" });
+    }
+
+    const { commentId, carId, userId } = req.body;
+    if (!commentId || !carId || !userId) {
+      return res.status(400).json({ message: "commentId, carId et userId sont requis" });
+    }
+
+    // Vérifie que le commentaire existe
+    const comment = await commentModel.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Commentaire non trouvé" });
+    }
+
+    // Suppression du commentaire
+    await commentModel.deleteOne({ _id: commentId });
+
+    // Nettoyage des références
+    await carModel.findByIdAndUpdate(carId, { $pull: { commentId: commentId } });
+    await userModel.findByIdAndUpdate(userId, { $pull: { commentId: commentId } });
+
+    res.status(200).json({ message: "Commentaire supprimé par l'admin", commentId });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
