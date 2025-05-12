@@ -4,6 +4,7 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const storage = multer.memoryStorage();
+const { OAuth2Client } = require('google-auth-library');
 const upload = multer({ storage });
 const maxTime = 24 * 60 * 60; //24H
 
@@ -371,5 +372,74 @@ exports.changePassword = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+module.exports.googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+   
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    // Vérifier si l'utilisateur existe déjà
+    let user = await userModel.findOne({ email });
+
+    if (!user) {
+      // Créer un nouvel utilisateur avec le credential Google comme mot de passe
+      user = await userModel.create({
+        email,
+        username: name,
+        user_image: picture,
+        password: credential,
+        status: 'Active',
+        role: 'client',
+        isGoogleUser: true
+      });
+    } else if (!user.isGoogleUser) {
+      // Si l'utilisateur existe mais n'est pas un utilisateur Google
+      return res.status(400).json({
+        success: false,
+        message: "Cet email est déjà utilisé avec un compte normal. Veuillez vous connecter avec votre mot de passe."
+      });
+    }
+
+    // Générer le token JWT
+    const token = jwt.sign(
+      { 
+        id: user._id,
+        email: user.email,
+        role: user.role 
+      },
+      process.env.net_Secret,
+      { expiresIn: '24h' }
+    );
+
+    // Envoyer la réponse
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        status: user.status,
+        user_image: user.user_image,
+        isGoogleUser: user.isGoogleUser
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur de connexion Google:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la connexion avec Google'
+    });
   }
 };
