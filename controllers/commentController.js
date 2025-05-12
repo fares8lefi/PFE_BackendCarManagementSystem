@@ -62,6 +62,7 @@ module.exports.addComment = async (req, res) => {
     });
 
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message })
   }
 };
@@ -140,26 +141,36 @@ module.exports.updateComment = async (req, res) => {
   try {
     const userId = req.session.user?._id;
     const { commentId, content } = req.body;
-
+    console.log("le content ===",content)
     if (!userId) {
       return res.status(401).json({ message: "Utilisateur non authentifié" });
     }
-    if (!commentId || !content) {
-      return res.status(400).json({ message: "commentId et contenu requis" });
-    }
 
-    // Vérifier que le commentaire existe et appartient à l'utilisateur
-    const comment = await commentModel.findOne({ _id: commentId, userId: userId });
-    if (!comment) {
+    // Mise à jour directe avec findOneAndUpdate
+    const updatedComment = await commentModel.findOneAndUpdate(
+      { 
+        _id: commentId, 
+        userId: userId 
+      },
+      { 
+        $set: { content: content } // Spécifier explicitement le champ à mettre à jour
+      },
+      { 
+        new: true, // Retourner le document mis à jour
+        runValidators: true // Exécuter les validateurs du schéma
+      }
+    );
+
+    if (!updatedComment) {
       return res.status(404).json({ message: "Commentaire non trouvé ou non autorisé" });
     }
 
-    // Mise à jour du contenu
-    comment.content = content;
-    await comment.save();
-
-    res.status(200).json({ message: "Commentaire modifié avec succès", comment });
+    res.status(200).json({ 
+      message: "Commentaire modifié avec succès", 
+      updatedComment 
+    });
   } catch (error) {
+    console.error("Erreur de mise à jour:", error);
     res.status(500).json({ message: error.message });
   }
 };
