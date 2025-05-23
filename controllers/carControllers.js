@@ -8,7 +8,7 @@ const QRCode = require("qrcode");
 const path = require("path");
 
 // add  cars with list of images
-module.exports.addCarImages = async (req, res) => {
+module.exports.addCar = async (req, res) => {
   try {
     const {
       marque,
@@ -21,6 +21,7 @@ module.exports.addCarImages = async (req, res) => {
       Boite,
       km,
       Energie,
+      phone
     } = req.body;
     const userId = req.session.user && req.session.user._id;
 
@@ -42,7 +43,8 @@ module.exports.addCarImages = async (req, res) => {
       Boite,
       km,
       Energie,
-      cars_images: imageBuffers, // tableau de Buffers
+      phone,
+      cars_images: imageBuffers,
       userID: userId,
     });
 
@@ -60,7 +62,17 @@ module.exports.addCarImages = async (req, res) => {
     const annonceUrl = `http://localhost:3000/annonce/${car._id}`;
     const qrCodeDataUrl = await QRCode.toDataURL(annonceUrl);
 
-    res.status(200).json({ car, qrCode: qrCodeDataUrl });
+    
+    const qrCode = await Qrcode.create({
+      qrCode: qrCodeDataUrl,
+      carId: car._id
+    });
+
+    res.status(200).json({ 
+      car, 
+      qrCode: qrCodeDataUrl,
+      qrCodeId: qrCode._id 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -140,7 +152,6 @@ module.exports.UpdateCarById = async function (req, res) {
 module.exports.deleteCarByID = async function (req, res) {
   try {
     const { carId } = req.body;
-    console.log('ffffffffzfzefzefzefzefzefzef',carId)
     const car = await carModel.findById(carId);
     const userId = car.userID;
     //console.log("userId ", userId);
@@ -167,56 +178,12 @@ module.exports.deleteCarByID = async function (req, res) {
 
 
 //search and filtring  by price
-module.exports.getAllCarsByMarqueFiltringByPrice = async (req, res) => {
-  try {
-    const { marque } = req.query;
-    if (!marque) {
-      throw new Error("Marque Not Found");
-    }
-    const carList = await carModel
-      .find({ marque: { $regex: marque, $options: "i" } })
-      .sort({ price: -1 });
-    res.status(200).json({ carList });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+
 //search and filtring  by
 
-module.exports.getAllCarsByMarqueFiltringByYear = async (req, res) => {
-  try {
-    const { marque } = req.query;
-    if (!marque) {
-      throw new Error("Marque Not Found");
-    }
-    const carList = await carModel
-      .find({ marque: { $regex: marque, $options: "i" } })
-      .sort({ year: -1 });
-    res.status(200).json({ carList });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+;
 // search and filtring between
 
-module.exports.getAllCarsByMarqueFiltringBetween = async (req, res) => {
-  try {
-    const { marque } = req.query;
-    if (!marque) {
-      throw new Error("Marque Not Found");
-    }
-    const carList = await carModel
-      .find({
-        marque: { $regex: marque, $options: "i" }, // Filtre par marque (insensible à la casse)
-        price: { $gte: 40, $lte: 250 }, // Filtre par prix (entre 40 et 250)
-      })
-      .sort({ price: 1 });
-    // // il faut ajouté les entrée des valeurs dans une formulaire
-    res.status(200).json({ carList });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 //get user cars
 
@@ -478,5 +445,61 @@ module.exports.getDailyCarAdditions = async (req, res) => {
     res.json(dailyStats);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.updateCarStatus = async (req, res) => {
+  try {
+    const { carId } = req.params;
+    const userId = req.session.user?._id;
+
+    // Vérifier si l'utilisateur est connecté
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Utilisateur non authentifié" 
+      });
+    }
+
+    
+    const car = await carModel.findById(carId);
+    if (!car) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Voiture non trouvée" 
+      });
+    }
+
+    // Vérifier si l'utilisateur est le propriétaire
+    if (car.userID.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Vous n'êtes pas autorisé à modifier cette voiture" 
+      });
+    }
+
+    
+    const updatedCar = await carModel.findByIdAndUpdate(
+      carId,
+      { 
+        $set: { 
+          statut: "Vendu"
+        } 
+      },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Statut de la voiture mis à jour avec succès",
+      car: updatedCar
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du statut:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
