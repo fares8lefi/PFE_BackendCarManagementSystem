@@ -7,6 +7,8 @@ const session = require('express-session');
 const cors = require("cors");
 const multer = require('multer');
 const fs = require('fs');
+const http = require('http');
+const io = require('socket.io');
 
 // Routes
 var usersRouter = require('./routes/usersRouter');
@@ -16,6 +18,7 @@ var notificationRouter = require('./routes/notificationsRouter');
 var favorisRouter = require('./routes/favorisRouter');
 var newsLetter = require('./routes/newsLetterRouter');
 var contactRouter = require('./routes/contactRouter');
+var qrCodeRouter = require('./routes/qrCodeRouter');
 var app = express();
 
 // Configuration Multer
@@ -50,7 +53,7 @@ const upload = multer({
 require('dotenv').config();
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -74,6 +77,44 @@ app.use(session({
   }
 }));
 
+// Middleware pour rendre io accessible dans les routes
+app.use((req, res, next) => {
+  req.io = io(http.createServer(app), {
+    cors: {
+      origin: "http://localhost:5173",
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  });
+  next();
+});
+
+// Au lieu d'initialiser socket.io à chaque requête, fais-le une seule fois
+const server = http.createServer(app);
+const ioServer = require('socket.io')(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Rendre io disponible dans l'application
+app.set('io', ioServer);
+
+// Gestion des connexions Socket.IO
+ioServer.on('connection', (socket) => {
+  console.log('Un utilisateur connecté');
+
+  socket.on('authenticate', (userId) => {
+    socket.join(userId);
+    console.log(`Utilisateur ${userId} authentifié`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Un utilisateur déconnecté');
+  });
+});
 
 app.use('/users', usersRouter);
 app.use('/cars', carsRouter);
@@ -82,18 +123,16 @@ app.use('/notification', notificationRouter);
 app.use('/favoris', favorisRouter);
 app.use('/newsLetter', newsLetter);
 app.use('/contact', contactRouter);
-
+app.use('/qrCode', qrCodeRouter);
 // Middleware d'upload pour les routes nécessitant des fichiers
 app.use((req, res, next) => {
   req.upload = upload;
   next();
 });
 
-
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() });
 });
-
 
 app.use(function(req, res, next) {
   next(createError(404));
@@ -114,14 +153,12 @@ app.use(function(err, req, res, next) {
   });
 });
 
-const http = require('http');
 const { connectToDb } = require('./config/db');
 
-const server = http.createServer(app);
-
-server.listen(process.env.port, () => {
+const PORT = process.env.PORT || 3003;
+server.listen(PORT, () => {
   connectToDb();
-  console.log(`Server running on port ${process.env.port}`);
+  console.log(`Serveur démarré sur le port ${PORT}`);
 });
 
 module.exports = app;
