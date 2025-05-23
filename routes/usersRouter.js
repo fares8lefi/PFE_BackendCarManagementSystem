@@ -7,9 +7,9 @@ const {requireAuthUser} = require('../middlewares/authMiddelwares');
 /* GET users listing. */
 
 //router.post('/addUserClientImg',upload.single("user_image") ,userController.addUserClientImg);
-//router.post('/loginUser',userController.loginUser); 
-router.post('/loginUser',requireAuthUser,userController.loginUser); 
-router.post('/addUserClientImgOf', upload.single("user_image"), userController.addUserClientImgOf);
+router.post('/loginUser',userController.loginUser); 
+//router.post('/loginUser',requireAuthUser,userController.loginUser); 
+router.post('/singUpUser', upload.single("user_image"), userController.singUpUser);
 router.put('/UpdateUserClientbyId',requireAuthUser,upload.single("user_image"),userController.UpdateUserClientbyId);
 router.post('/logout',requireAuthUser,userController.logout);
 router.post('/googleLogin',userController.googleLogin);
@@ -21,6 +21,10 @@ router.get('/searchUsers', userController.searchUsers);
 router.put('/changePassword',requireAuthUser,userController.changePassword);
 router.patch('/updateUserStatus/:id/status', userController.updateUserStatus);
 router.delete('/deleteUser/:id', userController.deleteUser);
+router.post('/forgotPassword', userController.forgotPassword);
+router.post('/verifyResetCode', userController.verifyResetCode);
+router.post('/resetPassword', userController.resetPassword);
+router.post('/verifyAccount', userController.verifyAccount);
 module.exports = router;
  
 
