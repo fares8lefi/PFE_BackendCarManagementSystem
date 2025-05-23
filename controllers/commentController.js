@@ -48,15 +48,50 @@ module.exports.addComment = async (req, res) => {
       })
     ]);
 
-    // craeaion du notifications
+    // Création et envoi de notification en temps réel
     if (populatedComment.carId?.userID?._id.toString() !== userId.toString()) {
-      await notificationModel.create({
+      // Créer la notification avec tous les champs requis
+      const notification = await notificationModel.create({
+        recipient: populatedComment.carId.userID._id,
+        type: "comment",
         content: `Nouveau commentaire sur votre ${populatedComment.carId.marque} ${populatedComment.carId.model}`,
-        recipient: populatedComment.carId.userID._id 
+        link: `/carDetaille/${carId}`,
+        relatedCar: carId,
+        relatedUser: userId
       });
+
+      // Ajouter la notification à l'utilisateur
+      await userModel.updateOne(
+        { _id: populatedComment.carId.userID._id },
+        { $push: { notifications: notification._id } }
+      );
+
+      // Envoyer la notification en temps réel via Socket.IO
+      const io = req.io;
+      if (io) {
+        io.to(populatedComment.carId.userID._id.toString()).emit('newNotification', {
+          notification: {
+            _id: notification._id,
+            type: notification.type,
+            content: notification.content,
+            link: notification.link,
+            isRead: false,
+            createdAt: notification.createdAt,
+            relatedCar: {
+              _id: populatedComment.carId._id,
+              marque: populatedComment.carId.marque,
+              model: populatedComment.carId.model
+            },
+            relatedUser: {
+              _id: populatedComment.userId._id,
+              username: populatedComment.userId.username
+            }
+          }
+        });
+      }
     }
 
-    // 7. Réponse formatée
+    // Réponse formatée
     res.status(201).json({
       comment
     });
