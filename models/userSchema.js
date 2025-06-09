@@ -35,8 +35,8 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "blocked"],
-       default: 'Active'
+      enum: ["Pending", "active", "blocked"],
+      default: "Pending"
     },
     user_image: {
       data: { type: Buffer, required: false },
@@ -55,7 +55,15 @@ const userSchema = new mongoose.Schema(
     isGoogleUser: {
       type: Boolean,
       default: false
-    }
+    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+    validationCode: String,
+    validationCodeExpiry: Date,
+    isVerified: {
+      type: Boolean,
+      default: false
+    },
   },
 
   { timestamps: true }
