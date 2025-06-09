@@ -16,7 +16,7 @@ router.post('/googleLogin',userController.googleLogin);
 router.post('/addUserAdmin', upload.single("user_image"),userController.addUserAdmin);
 router.get('/getAllUsers', userController.getAllUsers);
 router.get('/getUsersbyId', requireAuthUser,userController.getUsersbyId);
-router.delete('/deleteuserById', userController.deleteuserById); // :id qui sera supprimé 
+router.delete('/deleteUser', userController.deleteUser); // :id qui sera supprimé 
 router.get('/searchUsers', userController.searchUsers);
 router.put('/changePassword',requireAuthUser,userController.changePassword);
 router.patch('/updateUserStatus/:id/status', userController.updateUserStatus);

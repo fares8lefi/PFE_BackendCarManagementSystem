@@ -1,15 +1,14 @@
-var express = require('express');
-var router = express.Router(); 
-const notification = require('../controllers/notificationController');
-const {requireAuthUser} = require('../middlewares/authMiddelwares');
+const express = require("express");
+const router = express.Router();
+const notificationController = require("../controllers/notificationController");
+const { requireAuthUser } = require("../middlewares/authMiddelwares");
 
-
-router.post("/createNotification", notification.createNotification);
-router.post("/broadcastNotifToAll", notification.broadcastNotifToAll);
-router.delete("/deleteDistributedNotifications", notification.deleteDistributedNotifications);
-router.delete("/deleteAllUserNotifications",requireAuthUser,notification.deleteAllUserNotifications);
-router.get("/getUserNotifications",requireAuthUser,notification.getUserNotifications);
-router.put("/markAsRead",requireAuthUser,notification.markAsRead);
-
+// Routes protégées par l'authentification
+router.post("/createNotification", requireAuthUser, notificationController.createNotification);
+router.get("/getUserNotifications", requireAuthUser, notificationController.getUserNotifications);
+router.put("/markAsRead", requireAuthUser, notificationController.markAsRead);
+router.delete("/deleteAllUserNotifications", requireAuthUser, notificationController.deleteAllUserNotifications);
+router.post("/broadcast", requireAuthUser, notificationController.broadcastNotifToAll);
+router.delete("/all", requireAuthUser, notificationController.deleteDistributedNotifications);
 
 module.exports = router;
