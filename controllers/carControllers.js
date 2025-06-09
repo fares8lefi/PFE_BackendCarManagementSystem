@@ -216,7 +216,6 @@ module.exports.getCarsFiltered = async (req, res) => {
   try {
     const {
       marque,
-      minPrice,
       maxPrice,
       minYear,
       maxYear,
@@ -225,11 +224,10 @@ module.exports.getCarsFiltered = async (req, res) => {
       Boite,
     } = req.query;
 
-    console.log("Les filtres sont :", marque, minPrice, maxPrice, minYear, maxYear, maxKm, Energie, Boite);
+    console.log("Les filtres sont :", marque, maxPrice, minYear, maxYear, maxKm, Energie, Boite);
 
     if (
       !marque ||
-      !minPrice ||
       !maxPrice ||
       !minYear ||
       !maxYear ||
@@ -237,7 +235,7 @@ module.exports.getCarsFiltered = async (req, res) => {
       !Energie ||
       !Boite
     ) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Tous les filtres doivent être appliqués.",
       });
@@ -245,12 +243,14 @@ module.exports.getCarsFiltered = async (req, res) => {
 
     const filter = {
       marque: { $regex: marque, $options: "i" },
-      price: { $gte: Number(minPrice), $lte: Number(maxPrice) },
+      price: { $lte: Number(maxPrice) },
       year: { $gte: Number(minYear), $lte: Number(maxYear) },
       km: { $lte: Number(maxKm) },
       Energie,
       Boite,
     };
+
+    console.log("Filtre MongoDB:", JSON.stringify(filter, null, 2));
 
     const cars = await carModel
       .find(filter)
@@ -259,13 +259,19 @@ module.exports.getCarsFiltered = async (req, res) => {
       .sort({ price: -1, year: -1 })
       .lean();
 
+    // Si aucun résultat n'est trouvé, retourner un tableau vide au lieu d'une erreur 404
     if (cars.length === 0) {
-      return res.status(404).json({ success: false, message: "Cars introuvables" });
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        cars: [],
+        message: "Aucun véhicule ne correspond à vos critères de recherche."
+      });
     }
 
     const carsWithImages = cars.map((car) => ({
       ...car,
-      statut :car.statut,
+      statut: car.statut,
       cars_images: car.cars_images.map((img) => ({
         data: img.toString("base64"),
         contentType: "image/png",
@@ -278,7 +284,12 @@ module.exports.getCarsFiltered = async (req, res) => {
       cars: carsWithImages,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Erreur dans getCarsFiltered:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Une erreur est survenue lors de la recherche des véhicules.",
+      error: error.message 
+    });
   }
 };
 
