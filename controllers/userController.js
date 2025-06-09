@@ -7,6 +7,12 @@ const storage = multer.memoryStorage();
 const { OAuth2Client } = require('google-auth-library');
 const upload = multer({ storage });
 const maxTime = 24 * 60 * 60; //24H
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
+const carModel = require("../models/carShema");
+const Qrcode = require("../models/qrCodeSchema");
+const Comment = require("../models/commentSchema");
+const Notification = require("../models/notificationSchema");
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.net_Secret, { expiresIn: maxTime });
@@ -49,16 +55,14 @@ module.exports.addUserClientImg = async (req, res) => {
   }
 };
 
-module.exports.addUserClientImgOf = async (req, res) => {
+module.exports.singUpUser = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Aucune image uploadée" });
     }
 
     if (!req.body.user) {
-      return res
-        .status(400)
-        .json({ message: "Données utilisateur manquantes" });
+      return res.status(400).json({ message: "Données utilisateur manquantes" });
     }
 
     let userData;
@@ -76,38 +80,80 @@ module.exports.addUserClientImgOf = async (req, res) => {
       });
     }
 
+    // Générer un code de validation (6 chiffres)
+    const validationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const validationCodeExpiry = Date.now() + 3600000; // Code valide pendant 1 heure
+
     const imageBuffer = fs.readFileSync(req.file.path);
 
     const user = await userModel.create({
       ...userData,
       role: "client",
-      status: "Active",
+      status: "Pending", // Statut initial en attente de validation
       user_image: imageBuffer,
+      validationCode: validationCode,
+      validationCodeExpiry: validationCodeExpiry,
+      isVerified: false
     });
 
     // Nettoyage du fichier temporaire
     fs.unlinkSync(req.file.path);
 
+    // Configurer le transporteur d'email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    // Configurer l'email de validation
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: userData.email,
+      subject: 'Validation de votre compte',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Bienvenue sur notre plateforme !</h2>
+          <p>Bonjour ${userData.username},</p>
+          <p>Merci de vous être inscrit. Pour activer votre compte, veuillez utiliser le code de validation suivant :</p>
+          <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
+            <strong>${validationCode}</strong>
+          </div>
+          <p>Ce code est valable pendant 1 heure.</p>
+          <p>Si vous n'avez pas créé de compte, veuillez ignorer cet email.</p>
+          <p>Cordialement,<br>L'équipe de support</p>
+        </div>
+      `
+    };
+
+    // Envoyer l'email
+    await transporter.sendMail(mailOptions);
+
     res.status(200).json({
       success: true,
+      message: "Compte créé avec succès. Veuillez vérifier votre email pour activer votre compte.",
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
-      },
+        status: user.status
+      }
     });
+
   } catch (error) {
+    console.error('Erreur lors de l\'inscription:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message
     });
   }
 };
 // add admin
 module.exports.addUserAdmin = async (req, res) => {
   try {
-    const userData = JSON.parse(req.body.user);
-    const { username, email, password } = userData;
+    const { username, email, password } = req.body;
     if (!username || !email || !password) {
       return res
         .status(400)
@@ -158,9 +204,8 @@ module.exports.getUsersbyId = async (req, res) => {
 
     const userData = user.toObject();
     if (user.user_image && user.user_image.data) {
-      userData.user_image = `data:${
-        user.user_image.contentType
-      };base64,${user.user_image.data.toString("base64")}`;
+      userData.user_image = `data:${user.user_image.contentType
+        };base64,${user.user_image.data.toString("base64")}`;
     } else {
       userData.user_image = "/default-avatar.png";
     }
@@ -172,20 +217,56 @@ module.exports.getUsersbyId = async (req, res) => {
 };
 
 // delete by id
-module.exports.deleteuserById = async (req, res) => {
+module.exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    // check if user exist
-    const checkUser = await userModel.findById(id);
-    if (!checkUser) {
-      throw new Error("User Not Found");
+
+    // Vérifier si l'utilisateur existe
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé"
+      });
     }
 
-    const user = await userModel.findByIdAndDelete(id);
+    // Supprimer toutes les voitures de l'utilisateur
+    const carsToDelete = await carModel.find({ userID: id });
+    const carIds = carsToDelete.map(car => car._id);
 
-    res.status(200).json("user was delete successfully");
+    await Qrcode.deleteMany({ carId: { $in: carIds } });
+
+
+    await Comment.deleteMany({ userId: id });
+
+
+    await Comment.deleteMany({ carId: { $in: carIds } });
+
+
+    await Notification.deleteMany({ userId: id });
+
+    await carModel.deleteMany({ userID: id });
+
+
+    await userModel.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Utilisateur et toutes ses données associées ont été supprimés avec succès",
+      deletedData: {
+        carsDeleted: carIds.length,
+        commentsDeleted: await Comment.countDocuments({ userId: id }),
+        notificationsDeleted: await Notification.countDocuments({ userId: id })
+      }
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Erreur lors de la suppression de l\'utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la suppression de l'utilisateur",
+      error: error.message
+    });
   }
 };
 // update client :
@@ -220,9 +301,8 @@ exports.UpdateUserClientbyId = async (req, res) => {
     // Conversion de l'image en base64 pour l'envoi vers le front-end
     const userResponse = updatedUser.toObject();
     if (updatedUser.user_image) {
-      userResponse.user_image = `data:${
-        updatedUser.user_image.contentType
-      };base64,${updatedUser.user_image.data.toString("base64")}`;
+      userResponse.user_image = `data:${updatedUser.user_image.contentType
+        };base64,${updatedUser.user_image.data.toString("base64")}`;
     }
 
     res.status(200).json(userResponse);
@@ -280,23 +360,11 @@ exports.updateUserStatus = async (req, res) => {
 
     res.status(200).json(user);
   } catch (error) {
+    console.log("error : ", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-exports.deleteUser = async (req, res) => {
-  try {
-    const user = await userModel.findByIdAndDelete(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
-    }
-
-    res.status(200).json({ deletedUser: user });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
 //login
 module.exports.loginUser = async function (req, res) {
   try {
@@ -378,7 +446,7 @@ module.exports.googleLogin = async (req, res) => {
   try {
     const { credential } = req.body;
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-   
+
     const ticket = await client.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID
@@ -411,10 +479,10 @@ module.exports.googleLogin = async (req, res) => {
 
     // Générer le token JWT
     const token = jwt.sign(
-      { 
+      {
         id: user._id,
         email: user.email,
-        role: user.role 
+        role: user.role
       },
       process.env.net_Secret,
       { expiresIn: '24h' }
@@ -440,6 +508,216 @@ module.exports.googleLogin = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la connexion avec Google'
+    });
+  }
+};
+
+// Fonction pour vérifier si l'email existe et envoyer le code de réinitialisation
+module.exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Vérifier si l'email existe
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Aucun compte associé à cet email"
+      });
+    }
+
+    // Générer un code de réinitialisation (6 chiffres)
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetCodeExpiry = Date.now() + 3600000; // Code valide pendant 1 heure
+
+    // Mettre à jour uniquement les champs de réinitialisation
+    await userModel.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          resetPasswordToken: resetCode,
+          resetPasswordExpires: resetCodeExpiry
+        }
+      }
+    );
+
+    // Configurer le transporteur d'email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    // Configurer l'email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Code de réinitialisation de mot de passe',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Réinitialisation de votre mot de passe</h2>
+          <p>Bonjour,</p>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe. Voici votre code de réinitialisation :</p>
+          <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
+            <strong>${resetCode}</strong>
+          </div>
+          <p>Ce code est valable pendant 1 heure.</p>
+          <p>Si vous n'avez pas demandé cette réinitialisation, veuillez ignorer cet email.</p>
+          <p>Cordialement,<br>L'équipe de support</p>
+        </div>
+      `
+    };
+
+    // Envoyer l'email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "Un code de réinitialisation a été envoyé à votre adresse email"
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la demande de réinitialisation:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'envoi du code de réinitialisation"
+    });
+  }
+};
+
+// Fonction pour vérifier le code de réinitialisation
+module.exports.verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    const user = await userModel.findOne({
+      email,
+      resetPasswordToken: code,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Code invalide ou expiré"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Code vérifié avec succès"
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la vérification du code:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la vérification du code"
+    });
+  }
+};
+
+// Fonction pour réinitialiser le mot de passe
+module.exports.resetPassword = async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    console.log("email : ", email);
+    console.log("code : ", code);
+    console.log("newPassword : ", newPassword);
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, code et nouveau mot de passe sont requis"
+      });
+    }
+
+    const user = await userModel.findOne({
+      email,
+      resetPasswordToken: code,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Code invalide ou expiré"
+      });
+    }
+
+    // Hacher le nouveau mot de passe
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Mettre à jour le mot de passe avec le hash
+    await userModel.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          password: hashedPassword,
+          resetPasswordToken: undefined,
+          resetPasswordExpires: undefined
+        }
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Mot de passe réinitialisé avec succès"
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation du mot de passe:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la réinitialisation du mot de passe"
+    });
+  }
+};
+
+// Fonction pour vérifier le code de validation
+module.exports.verifyAccount = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    const user = await userModel.findOne({
+      email,
+      validationCode: code,
+      validationCodeExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Code invalide ou expiré"
+      });
+    }
+
+    // Mettre à jour le statut de l'utilisateur
+    await userModel.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          status: "Active",
+          isVerified: true,
+          validationCode: undefined,
+          validationCodeExpiry: undefined
+        }
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Compte validé avec succès"
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la validation du compte:', error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la validation du compte"
     });
   }
 };
