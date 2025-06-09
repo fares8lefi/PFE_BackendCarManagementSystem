@@ -7,6 +7,7 @@ const carShema = new mongoose.Schema(
     year: { type: Number, required: true },
     price: { type: Number, require: true },
     km :{type:Number , required :  true},
+    phone :{type:Number , required :  true},
     Energie: {
       type: String,
       enum: ["Essence", "Diesel", "Hybrid", "Electric"]
@@ -54,5 +55,5 @@ carShema.post("save", async function (res, req, next) {
   console.log("car add -------------------------------");
 });
 
-const Car = mongoose.model("carModel", carShema);
-module.exports = Car;
+const carModel = mongoose.model("carModel", carShema);
+module.exports = carModel;
