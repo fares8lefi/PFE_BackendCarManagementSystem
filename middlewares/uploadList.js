@@ -8,28 +8,28 @@ if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
 }
 
-var storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadPath); 
-  },
-  filename: function (req, file, cb) {
-    const originalName = file.originalname;
-    const fileExtension = path.extname(originalName);
-    let fileName = originalName;
+// Configuration de Multer pour stocker les fichiers en mémoire
+const storage = multer.memoryStorage();
 
-    // Vérifier si le fichier existe déjà
-    let fileIndex = 1;
-    while (fs.existsSync(path.join(uploadPath, fileName))) {
-      const baseName = path.basename(originalName, fileExtension);
-      fileName = `${baseName}_${fileIndex}${fileExtension}`;
-      fileIndex++;
-    }
-
-    cb(null, fileName); 
-  },
-});
+// Filtre pour n'accepter que les images
+const fileFilter = (req, file, cb) => {
+  console.log('Fichier reçu:', file.originalname, file.fieldname, file.mimetype);
+  
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    console.log('Type de fichier rejeté:', file.mimetype);
+    cb(new Error('Seules les images sont acceptées'), false);
+  }
+};
 
 // Exporter l'instance de multer
-const uploadfile = multer({ storage: storage });
+const uploadfile = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Limite de 5MB par fichier
+  }
+}).any(); // Utiliser .any() pour accepter tous les champs de fichiers
 
 module.exports = uploadfile;

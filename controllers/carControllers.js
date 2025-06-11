@@ -29,8 +29,8 @@ module.exports.addCar = async (req, res) => {
       throw new Error("ID utulisateur est manquant.");
     }
 
-    // Lire les fichiers et récupérer en format Buffer
-    const imageBuffers = req.files.map((file) => fs.readFileSync(file.path));
+    // Utiliser directement les buffers des fichiers
+    const imageBuffers = req.files.map(file => file.buffer);
 
     const car = await carModel.create({
       marque,
@@ -56,13 +56,9 @@ module.exports.addCar = async (req, res) => {
       { upsert: true }
     );
 
-    // Supprimer les fichiers temporaires après lecture
-    req.files.forEach((file) => fs.unlinkSync(file.path));
-
-    const annonceUrl = `http://localhost:3000/annonce/${car._id}`;
+    const annonceUrl = `http://localhost:3003/carModel/${car._id}`;
     const qrCodeDataUrl = await QRCode.toDataURL(annonceUrl);
 
-    
     const qrCode = await Qrcode.create({
       qrCode: qrCodeDataUrl,
       carId: car._id
@@ -74,6 +70,7 @@ module.exports.addCar = async (req, res) => {
       qrCodeId: qrCode._id 
     });
   } catch (error) {
+    console.error('Erreur lors de l\'ajout de la voiture:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -133,18 +130,59 @@ module.exports.UpdateCarById = async function (req, res) {
     const { carId } = req.params;
     const updates = req.body;
 
+    console.log('CarId:', carId);
+    console.log('Updates:', updates);
+    console.log('Files:', req.files);
+
     if (!carId) {
       return res.status(400).json({ message: "id car invalide" });
     }
 
+    // Vérifier si la voiture existe
+    const existingCar = await carModel.findById(carId);
+    if (!existingCar) {
+      return res.status(404).json({ message: "Voiture non trouvée" });
+    }
+
+    // Si des nouvelles images sont fournies dans la requête
+    if (req.files && req.files.length > 0) {
+      try {
+        // Convertir les fichiers en Buffer
+        const imageBuffers = req.files.map(file => file.buffer);
+        updates.cars_images = imageBuffers;
+        console.log('Nouvelles images ajoutées:', imageBuffers.length);
+      } catch (error) {
+        console.error('Erreur lors du traitement des images:', error);
+        return res.status(400).json({ message: "Erreur lors du traitement des images" });
+      }
+    }
+
+    // Mettre à jour la voiture
     const updatedCar = await carModel.findByIdAndUpdate(
       carId,
       { $set: updates },
       { new: true, runValidators: true }
     );
-    res.status(200).json(updatedCar);
+
+    if (!updatedCar) {
+      return res.status(404).json({ message: "Erreur lors de la mise à jour de la voiture" });
+    }
+
+    // Convertir les images en base64 pour la réponse
+    const carWithImages = {
+      ...updatedCar._doc,
+      cars_images: updatedCar.cars_images.map(img => 
+        `data:image/jpeg;base64,${img.toString('base64')}`
+      )
+    };
+
+    res.status(200).json({  success: true, message: "Voiture mise à jour avec succès", carWithImages });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+   console.log(error);
+    res.status(500).json({ 
+      message: "Erreur lors de la mise à jour de la voiture",
+      error: error.message 
+    });
   }
 };
 // delete by id
